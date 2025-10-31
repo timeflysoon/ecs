@@ -10,7 +10,7 @@ import (
 
 const (
 	// ecsVersion 使用核心包的版本号
-	ecsVersion = "v0.1.91"
+	ecsVersion = "v0.1.93"
 	width      = 80
 )
 

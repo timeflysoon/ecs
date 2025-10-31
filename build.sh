@@ -46,7 +46,7 @@ build_android() {
     echo "Android NDK: $ANDROID_NDK_HOME"
     
     # 获取版本信息
-    VERSION="v1.0.0-$(date +%Y%m%d)-$(git rev-parse --short HEAD 2>/dev/null || echo 'dev')"
+    VERSION="v0.0.1-$(date +%Y%m%d)-$(git rev-parse --short HEAD 2>/dev/null || echo 'dev')"
     echo "版本: $VERSION"
     
     # 创建输出目录

@@ -7,7 +7,7 @@
 `goecs-android-{arch}-{version}.apk`
 
 - arch: arm64 或 x86_64
-- version: 版本号格式为 v1.0.0-YYYYMMDD-{git-hash}
+- version: 版本号格式为 v0.0.1-YYYYMMDD-{git-hash}
 
 ## 架构说明
 
