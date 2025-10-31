@@ -251,46 +251,9 @@ jobs:
           ls -lh .build/
           du -sh .build/*
       
-      - name: Upload macOS artifacts
-        if: matrix.platform == 'darwin'
-        uses: actions/upload-artifact@v4
-        with:
-          name: goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}
-          path: .build/*
-          retention-days: 90
-          if-no-files-found: error
-      
-      - name: Upload Windows artifacts
-        if: matrix.platform == 'windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}
-          path: .build/*
-          retention-days: 90
-          if-no-files-found: error
-
-  upload-to-release:
-    name: Upload to Latest Release
-    needs: [prepare, build-android, build-desktop]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/android-app'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      
-      - name: Display structure of downloaded files
-        run: ls -R artifacts/
-      
-      - name: Get latest release
+      - name: Get or create release
         id: get_release
+        shell: bash
         run: |
           LATEST_RELEASE=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
           if [ -z "$LATEST_RELEASE" ] || [ "$LATEST_RELEASE" == "null" ]; then
@@ -307,18 +270,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Upload artifacts to release
+      - name: Upload to release
+        shell: bash
         run: |
-          cd artifacts
-          for dir in */; do
-            cd "$dir"
-            for file in *; do
-              if [ -f "$file" ]; then
-                echo "Uploading $file to release ${{ steps.get_release.outputs.RELEASE_TAG }}"
-                gh release upload "${{ steps.get_release.outputs.RELEASE_TAG }}" "$file" --clobber
-              fi
-            done
-            cd ..
+          cd .build
+          for file in *; do
+            if [ -f "$file" ]; then
+              echo "Uploading $file to release ${{ steps.get_release.outputs.RELEASE_TAG }}"
+              gh release upload "${{ steps.get_release.outputs.RELEASE_TAG }}" "$file" --clobber
+            fi
           done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
