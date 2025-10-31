@@ -23,7 +23,7 @@ jobs:
       
       - name: Install Fyne CLI
         run: |
-          go install fyne.io/fyne/v2/cmd/fyne@latest
+          go install fyne.io/tools/cmd/fyne@latest
       
       - name: Set up JDK 17
         uses: actions/setup-java@v4
