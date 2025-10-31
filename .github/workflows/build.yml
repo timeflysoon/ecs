@@ -75,16 +75,6 @@ jobs:
           sdkmanager --install "build-tools;33.0.2"
           sdkmanager --install "platforms;android-33"
       
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      
       - name: Configure Git for Private Modules
         run: |
           git config --global url."https://${{ secrets.GHT }}@github.com/".insteadOf "https://github.com/"
@@ -176,12 +166,6 @@ jobs:
             platform: windows
             arch: amd64
             name: windows-amd64
-          
-          # Linux builds
-          - os: ubuntu-latest
-            platform: linux
-            arch: amd64
-            name: linux-amd64
     
     steps:
       - name: Checkout code
@@ -195,22 +179,6 @@ jobs:
       
       - name: Install Fyne CLI
         run: go install fyne.io/tools/cmd/fyne@latest
-      
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev
-      
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
       
       - name: Configure Git for Private Modules
         run: |
@@ -259,7 +227,7 @@ jobs:
               exit 1
             fi
           else
-            # Windows 和 Linux 直接使用 fyne package
+            # Windows 直接使用 fyne package
             echo "Building ${{ matrix.platform }} with fyne package..."
             fyne package -os ${{ matrix.platform }} -name goecs --app-version "${{ needs.prepare.outputs.app_version }}"
             
@@ -269,14 +237,6 @@ jobs:
                 echo "Windows exe 构建成功"
               else
                 echo "Windows exe 构建失败"
-                exit 1
-              fi
-            elif [ "${{ matrix.platform }}" == "linux" ]; then
-              if [ -f goecs ]; then
-                tar -czf .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz goecs
-                echo "Linux binary 构建成功"
-              else
-                echo "Linux binary 构建失败"
                 exit 1
               fi
             fi
