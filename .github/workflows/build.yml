@@ -209,8 +209,6 @@ jobs:
           GOPRIVATE: github.com/oneclickvirt/security
         shell: bash
         run: |
-          mkdir -p .build
-          
           # macOS 需要特殊处理：先编译再打包
           if [ "${{ matrix.platform }}" == "darwin" ]; then
             echo "Building macOS binary with ldflags..."
@@ -220,13 +218,14 @@ jobs:
             fyne package -os darwin -name goecs --exe goecs-bin --app-version "${{ needs.prepare.outputs.app_version }}"
             
             if [ -d goecs.app ]; then
+              mkdir -p .build
               TARFILE="goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz"
+              echo "Creating tar file: $TARFILE"
               tar -czf "$TARFILE" goecs.app
               mv "$TARFILE" .build/
-              echo "macOS app 构建成功，已创建: .build/$TARFILE"
-              ls -lh .build/
+              echo "✓ macOS app 构建成功"
             else
-              echo "macOS app 构建失败"
+              echo "✗ macOS app 构建失败"
               exit 1
             fi
           else
@@ -236,10 +235,11 @@ jobs:
             
             if [ "${{ matrix.platform }}" == "windows" ]; then
               if [ -f goecs.exe ]; then
+                mkdir -p .build
                 mv goecs.exe .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.exe
-                echo "Windows exe 构建成功"
+                echo "✓ Windows exe 构建成功"
               else
-                echo "Windows exe 构建失败"
+                echo "✗ Windows exe 构建失败"
                 exit 1
               fi
             fi
@@ -248,24 +248,8 @@ jobs:
       - name: List build artifacts
         shell: bash
         run: |
-          echo "=== 检查 .build 目录 ==="
-          if [ -d .build ]; then
-            echo ".build 目录存在"
-            ls -lh .build/
-            if [ -n "$(ls -A .build/)" ]; then
-              echo "=== 文件大小 ==="
-              du -sh .build/*
-              echo "=== 当前工作目录 ==="
-              pwd
-              echo "=== 绝对路径 ==="
-              ls -lh "$(pwd)/.build/"
-            else
-              echo "警告: .build 目录为空"
-            fi
-          else
-            echo "错误: .build 目录不存在"
-            exit 1
-          fi
+          ls -lh .build/
+          du -sh .build/*
       
       - name: Upload macOS artifacts
         if: matrix.platform == 'darwin'
