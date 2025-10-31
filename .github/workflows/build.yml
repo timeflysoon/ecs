@@ -1,4 +1,4 @@
-name: Build All Platforms
+name: Build All UI APP
 
 on:
   push:
@@ -267,13 +267,21 @@ jobs:
             exit 1
           fi
       
-      - name: Upload artifacts
+      - name: Upload macOS artifacts
+        if: matrix.platform == 'darwin'
         uses: actions/upload-artifact@v4
         with:
           name: goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}
-          path: |
-            .build/*.exe
-            .build/*.tar.gz
+          path: .build/*.tar.gz
+          retention-days: 90
+          if-no-files-found: error
+      
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}
+          path: .build/*.exe
           retention-days: 90
           if-no-files-found: error
 

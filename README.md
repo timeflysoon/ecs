@@ -1,8 +1,6 @@
 # GoECS - 跨平台测试工具
 
-[![Build Android APK](https://github.com/oneclickvirt/ecs/actions/workflows/build-android.yml/badge.svg)](https://github.com/oneclickvirt/ecs/actions/workflows/build-android.yml)
-
-[![Build All Platforms](https://github.com/oneclickvirt/ecs/actions/workflows/build-all.yml/badge.svg)](https://github.com/oneclickvirt/ecs/actions/workflows/build-all.yml)
+[![Build All UI APP](https://github.com/oneclickvirt/ecs/actions/workflows/build-all.yml/badge.svg)](https://github.com/oneclickvirt/ecs/actions/workflows/build-all.yml)
 
 一个基于 Fyne 框架的跨平台测试工具，支持 Android、macOS、Windows 和 Linux。
 
