@@ -243,11 +243,14 @@ jobs:
         run: |
           mkdir -p .build
           
-          # Build the package with ldflags
-          fyne package -os ${{ matrix.platform }} -name goecs --app-version "${{ needs.prepare.outputs.app_version }}" -ldflags "-checklinkname=0 -s -w"
-          
-          # Package the output
+          # macOS 需要特殊处理：先编译再打包
           if [ "${{ matrix.platform }}" == "darwin" ]; then
+            echo "Building macOS binary with ldflags..."
+            go build -ldflags "-checklinkname=0 -s -w" -o goecs-bin .
+            
+            echo "Packaging macOS app with fyne..."
+            fyne package -os darwin -name goecs --exe goecs-bin --app-version "${{ needs.prepare.outputs.app_version }}"
+            
             if [ -d goecs.app ]; then
               tar -czf .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz goecs.app
               echo "macOS app 构建成功"
@@ -255,21 +258,27 @@ jobs:
               echo "macOS app 构建失败"
               exit 1
             fi
-          elif [ "${{ matrix.platform }}" == "windows" ]; then
-            if [ -f goecs.exe ]; then
-              mv goecs.exe .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.exe
-              echo "Windows exe 构建成功"
-            else
-              echo "Windows exe 构建失败"
-              exit 1
-            fi
-          elif [ "${{ matrix.platform }}" == "linux" ]; then
-            if [ -f goecs ]; then
-              tar -czf .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz goecs
-              echo "Linux binary 构建成功"
-            else
-              echo "Linux binary 构建失败"
-              exit 1
+          else
+            # Windows 和 Linux 直接使用 fyne package
+            echo "Building ${{ matrix.platform }} with fyne package..."
+            fyne package -os ${{ matrix.platform }} -name goecs --app-version "${{ needs.prepare.outputs.app_version }}"
+            
+            if [ "${{ matrix.platform }}" == "windows" ]; then
+              if [ -f goecs.exe ]; then
+                mv goecs.exe .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.exe
+                echo "Windows exe 构建成功"
+              else
+                echo "Windows exe 构建失败"
+                exit 1
+              fi
+            elif [ "${{ matrix.platform }}" == "linux" ]; then
+              if [ -f goecs ]; then
+                tar -czf .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz goecs
+                echo "Linux binary 构建成功"
+              else
+                echo "Linux binary 构建失败"
+                exit 1
+              fi
             fi
           fi
       
