@@ -196,6 +196,12 @@ jobs:
       - name: Install Fyne CLI
         run: go install fyne.io/tools/cmd/fyne@latest
       
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+      
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
@@ -237,34 +243,32 @@ jobs:
         run: |
           mkdir -p .build
           
-          # Build the package (use -os without arch for native builds)
-          fyne package -os ${{ matrix.platform }} -name goecs --app-version "${{ needs.prepare.outputs.app_version }}"
-          
-          # Package the output
+          # Use go build instead of fyne package for better compatibility
           if [ "${{ matrix.platform }}" == "darwin" ]; then
-            if [ -d goecs.app ]; then
-              tar -czf .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz goecs.app
-              echo "macOS app 构建成功"
-            else
-              echo "macOS app 构建失败"
-              exit 1
-            fi
+            go build -ldflags="-checklinkname=0 -s -w" -o goecs .
+            mkdir -p goecs.app/Contents/MacOS
+            mkdir -p goecs.app/Contents/Resources
+            mv goecs goecs.app/Contents/MacOS/
+            echo '<?xml version="1.0" encoding="UTF-8"?>' > goecs.app/Contents/Info.plist
+            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> goecs.app/Contents/Info.plist
+            echo '<plist version="1.0"><dict>' >> goecs.app/Contents/Info.plist
+            echo '<key>CFBundleExecutable</key><string>goecs</string>' >> goecs.app/Contents/Info.plist
+            echo '<key>CFBundleIdentifier</key><string>com.oneclickvirt.goecs</string>' >> goecs.app/Contents/Info.plist
+            echo '<key>CFBundleName</key><string>goecs</string>' >> goecs.app/Contents/Info.plist
+            echo '<key>CFBundlePackageType</key><string>APPL</string>' >> goecs.app/Contents/Info.plist
+            echo '<key>CFBundleShortVersionString</key><string>${{ needs.prepare.outputs.app_version }}</string>' >> goecs.app/Contents/Info.plist
+            echo '<key>LSMinimumSystemVersion</key><string>10.13.0</string>' >> goecs.app/Contents/Info.plist
+            echo '</dict></plist>' >> goecs.app/Contents/Info.plist
+            tar -czf .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz goecs.app
+            echo "macOS app 构建成功"
           elif [ "${{ matrix.platform }}" == "windows" ]; then
-            if [ -f goecs.exe ]; then
-              mv goecs.exe .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.exe
-              echo "Windows exe 构建成功"
-            else
-              echo "Windows exe 构建失败"
-              exit 1
-            fi
+            go build -ldflags="-checklinkname=0 -s -w -H=windowsgui" -o goecs.exe .
+            mv goecs.exe .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.exe
+            echo "Windows exe 构建成功"
           elif [ "${{ matrix.platform }}" == "linux" ]; then
-            if [ -f goecs ]; then
-              tar -czf .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz goecs
-              echo "Linux binary 构建成功"
-            else
-              echo "Linux binary 构建失败"
-              exit 1
-            fi
+            go build -ldflags="-checklinkname=0 -s -w" -o goecs .
+            tar -czf .build/goecs-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.tar.gz goecs
+            echo "Linux binary 构建成功"
           fi
       
       - name: List build artifacts
