@@ -59,10 +59,14 @@ type TestUI struct {
 func NewTestUI(app fyne.App) *TestUI {
 	ui := &TestUI{
 		app:    app,
-		window: app.NewWindow("GoECS - 服务器性能测试"),
+		window: app.NewWindow("融合怪测试"),
 	}
 
-	ui.window.Resize(fyne.NewSize(800, 600))
+	// 设置窗口大小 - 支持桌面和移动设备
+	// 移动设备会自动全屏
+	ui.window.Resize(fyne.NewSize(900, 700))
+	ui.window.SetPadded(true)
+
 	ui.buildUI()
 	return ui
 }
@@ -80,7 +84,7 @@ func (ui *TestUI) buildUI() {
 	// 创建结果显示区域
 	resultArea := ui.createResultArea()
 
-	// 左侧面板：选项和配置
+	// 左侧面板：选项和配置（添加内边距以适应移动设备）
 	leftPanel := container.NewVBox(
 		testOptionsGroup,
 		widget.NewSeparator(),
@@ -92,12 +96,12 @@ func (ui *TestUI) buildUI() {
 	// 右侧面板：结果显示
 	rightPanel := resultArea
 
-	// 使用分割容器
+	// 使用分割容器 - 在移动设备上会自动调整为垂直布局
 	split := container.NewHSplit(
 		container.NewScroll(leftPanel),
 		rightPanel,
 	)
-	split.Offset = 0.35 // 左侧占35%
+	split.Offset = 0.4 // 左侧占40%，为移动设备优化
 
 	ui.window.SetContent(split)
 }
@@ -239,15 +243,18 @@ func (ui *TestUI) createControlButtons() *fyne.Container {
 	ui.startButton = widget.NewButton("开始测试", ui.startTests)
 	ui.startButton.Importance = widget.HighImportance
 
-	ui.stopButton = widget.NewButton("停止测试", ui.stopTests)
+	ui.stopButton = widget.NewButton("停止", ui.stopTests)
 	ui.stopButton.Disable()
 
-	ui.clearButton = widget.NewButton("清空结果", ui.clearResults)
+	ui.clearButton = widget.NewButton("清空", ui.clearResults)
 
-	return container.NewGridWithColumns(3,
+	// 使用VBox布局以适应小屏幕
+	return container.NewVBox(
 		ui.startButton,
-		ui.stopButton,
-		ui.clearButton,
+		container.NewGridWithColumns(2,
+			ui.stopButton,
+			ui.clearButton,
+		),
 	)
 }
 

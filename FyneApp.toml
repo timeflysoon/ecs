@@ -1,8 +1,13 @@
 Website = "https://github.com/oneclickvirt/ecs"
 
 [Details]
-Icon = "icon.png"
+Icon = "logo.png"
 Name = "GoECS"
 ID = "com.oneclickvirt.goecs"
 Version = "1.0.0"
 Build = 1
+
+[Android]
+MinVersion = 24
+TargetVersion = 33
+Arch = ["arm64", "x86_64"]

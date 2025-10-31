@@ -1,6 +1,20 @@
-*.apkvendor/
+# APK and AAB files (keep .build directory)
+*.apk
+!.build/*.apk
+*.aab
 
-*.aab.idea/
+# Vendor
+vendor/
+
+# IDE
+.idea/
+
+# macOS
 .DS_Store
+
+# Fyne cross-compilation cache
 fyne-cross/
 .fyne-cross/
+
+# Build binaries
+goecs-android
