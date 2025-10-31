@@ -587,10 +587,6 @@ func (ui *TestUI) exportResults() {
 		return
 	}
 
-	// 保存到文件
-	timestamp := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("goecs_result_%s.txt", timestamp)
-
 	dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if err != nil {
 			dialog.ShowError(err, ui.window)
