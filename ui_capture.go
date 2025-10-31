@@ -5,7 +5,9 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strings"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
 )
 
 // captureOutputOnly 只捕获函数输出，不打印到终端（GUI专用）
@@ -76,19 +78,46 @@ func printAndCaptureGUI(f func(), tempOutput, output string) string {
 	return output
 }
 
-// appendResult 将文本追加到结果显示区域，并移除ANSI转义序列
+// appendResult 将文本追加到结果显示区域，移除ANSI转义序列
 func (ui *TestUI) appendResult(text string) {
 	// 去除 ANSI 转义序列（颜色代码等）
 	ansiRegex := regexp.MustCompile(`\x1B\[[0-9;]*[a-zA-Z]`)
 	cleanText := ansiRegex.ReplaceAllString(text, "")
 
-	currentText := ui.resultText.Text
-	ui.resultText.SetText(currentText + cleanText)
-	ui.resultText.CursorRow = len(strings.Split(ui.resultText.Text, "\n"))
+	// 如果已有内容，追加到现有文本
+	if len(ui.resultText.Segments) > 0 {
+		if textSeg, ok := ui.resultText.Segments[0].(*widget.TextSegment); ok {
+			textSeg.Text += cleanText
+			ui.resultText.Refresh()
+			return
+		}
+	}
+
+	// 首次添加，创建新的文本段落
+	segment := &widget.TextSegment{
+		Text: cleanText,
+		Style: widget.RichTextStyle{
+			TextStyle: fyne.TextStyle{Monospace: true},
+		},
+	}
+
+	ui.resultText.Segments = []widget.RichTextSegment{segment}
+	ui.resultText.Refresh()
 }
 
 // setResult 一次性设置所有结果
 func (ui *TestUI) setResult(text string) {
-	ui.resultText.SetText(text)
-	ui.resultText.CursorRow = len(strings.Split(text, "\n"))
+	// 去除 ANSI 转义序列
+	ansiRegex := regexp.MustCompile(`\x1B\[[0-9;]*[a-zA-Z]`)
+	cleanText := ansiRegex.ReplaceAllString(text, "")
+
+	segment := &widget.TextSegment{
+		Text: cleanText,
+		Style: widget.RichTextStyle{
+			TextStyle: fyne.TextStyle{Monospace: true},
+		},
+	}
+
+	ui.resultText.Segments = []widget.RichTextSegment{segment}
+	ui.resultText.Refresh()
 }

@@ -54,7 +54,7 @@ type TestUI struct {
 	clearButton *widget.Button
 
 	// 结果显示
-	resultText  *widget.Entry
+	resultText  *widget.RichText
 	progressBar *widget.ProgressBar
 	statusLabel *widget.Label
 

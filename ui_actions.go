@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 )
 
 // onPresetChanged 预设模式改变时的处理
@@ -130,7 +131,9 @@ func (ui *TestUI) startTests() {
 	ui.clearButton.Disable()
 	ui.progressBar.Show()
 	ui.statusLabel.SetText("测试运行中...")
-	ui.resultText.SetText("")
+	// 清空结果显示
+	ui.resultText.Segments = []widget.RichTextSegment{}
+	ui.resultText.Refresh()
 
 	ui.cancelCtx, ui.cancelFn = context.WithCancel(context.Background())
 	go ui.runTests()
@@ -151,14 +154,20 @@ func (ui *TestUI) stopTests() {
 
 // clearResults 清空测试结果
 func (ui *TestUI) clearResults() {
-	ui.resultText.SetText("")
+	ui.resultText.Segments = []widget.RichTextSegment{}
+	ui.resultText.Refresh()
 	ui.statusLabel.SetText("就绪")
 	ui.progressBar.SetValue(0)
 }
 
 // exportResults 导出测试结果
 func (ui *TestUI) exportResults() {
-	content := ui.resultText.Text
+	// 从 RichText 提取纯文本内容
+	var content string
+	for _, seg := range ui.resultText.Segments {
+		content += seg.Textual()
+	}
+
 	if content == "" {
 		dialog.ShowInformation("提示", "没有可导出的结果", ui.window)
 		return

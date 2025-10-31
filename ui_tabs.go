@@ -255,11 +255,9 @@ func (ui *TestUI) createResultTab() fyne.CanvasObject {
 	ui.progressBar = widget.NewProgressBar()
 	ui.progressBar.Hide()
 
-	// 结果文本框 - 使用等宽字体并禁用自动换行以保持格式
-	ui.resultText = widget.NewMultiLineEntry()
+	// 结果文本 - 使用 RichText 支持富文本和颜色
+	ui.resultText = widget.NewRichText()
 	ui.resultText.Wrapping = fyne.TextWrapOff
-	ui.resultText.SetPlaceHolder("测试结果将显示在这里...")
-	ui.resultText.TextStyle = fyne.TextStyle{Monospace: true}
 
 	// 导出按钮
 	exportButton := widget.NewButton("导出结果", ui.exportResults)
