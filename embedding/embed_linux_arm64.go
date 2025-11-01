@@ -1,5 +1,4 @@
-//go:build linux && !android && arm64
-// +build linux,!android,arm64
+//go:build linux && arm64
 
 package embedding
 
