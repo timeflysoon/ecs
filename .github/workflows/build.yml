@@ -93,7 +93,7 @@ jobs:
       - name: Download ECS binaries for embed
         run: |
           REPO="oneclickvirt/ecs"
-          BINARIES_DIR="binaries"
+          BINARIES_DIR="embedding/binaries"
           
           mkdir -p "$BINARIES_DIR"
           
@@ -265,7 +265,7 @@ jobs:
         shell: bash
         run: |
           REPO="oneclickvirt/ecs"
-          BINARIES_DIR="binaries"
+          BINARIES_DIR="embedding/binaries"
           TARGET_OS="${{ matrix.platform }}"
           TARGET_ARCH="${{ matrix.arch }}"
           

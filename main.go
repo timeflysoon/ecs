@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"fyne.io/fyne/v2/app"
+	"github.com/oneclickvirt/ecs-android/ui"
 )
 
 var (
@@ -39,10 +40,10 @@ func main() {
 
 func runGUIMode() {
 	myApp := app.NewWithID("com.oneclickvirt.goecs")
-	myApp.Settings().SetTheme(&customTheme{})
+	myApp.Settings().SetTheme(&ui.CustomTheme{})
 
-	ui := NewTestUI(myApp)
-	ui.window.ShowAndRun()
+	testUI := ui.NewTestUI(myApp)
+	testUI.Window.ShowAndRun()
 }
 
 func printHelp() {

@@ -15,7 +15,7 @@ download_ecs_binary() {
     echo "=========================================="
     
     REPO="oneclickvirt/ecs"
-    BINARIES_DIR="binaries"
+    BINARIES_DIR="embedding/binaries"
     
     mkdir -p "$BINARIES_DIR"
     
