@@ -283,11 +283,18 @@ jobs:
           echo "ECS 版本: $ECS_VERSION"
           echo "目标平台: $TARGET_OS/$TARGET_ARCH"
           
-          OUTPUT_FILE="${BINARIES_DIR}/goecs-${TARGET_OS}-${TARGET_ARCH}"
+          # Windows 需要 .exe 后缀
+          if [ "$TARGET_OS" == "windows" ]; then
+            OUTPUT_FILE="${BINARIES_DIR}/goecs-${TARGET_OS}-${TARGET_ARCH}.exe"
+          else
+            OUTPUT_FILE="${BINARIES_DIR}/goecs-${TARGET_OS}-${TARGET_ARCH}"
+          fi
+          
           PATTERN="goecs_${TARGET_OS}_${TARGET_ARCH}.zip"
           
           echo "下载 ${TARGET_OS}/${TARGET_ARCH}..."
           echo "Pattern: $PATTERN"
+          echo "Output: $OUTPUT_FILE"
           
           # 下载到临时文件
           gh release download "$ECS_VERSION" --repo "$REPO" --pattern "$PATTERN" --output "/tmp/goecs.zip"
