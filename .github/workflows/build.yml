@@ -97,9 +97,9 @@ jobs:
           
           mkdir -p "$BINARIES_DIR"
           
-          # 获取最新版本
+          # 使用 gh CLI 获取最新版本（更简单可靠）
           echo "获取最新版本信息..."
-          ECS_VERSION=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          ECS_VERSION=$(gh release view --repo "$REPO" --json tagName --jq '.tagName')
           
           if [ -z "$ECS_VERSION" ]; then
             echo "错误: 无法获取最新版本"
@@ -110,16 +110,14 @@ jobs:
           
           # 下载 Linux ARM64（用于 Android ARM64）
           echo "下载 Linux ARM64..."
-          curl -L -f -o "/tmp/goecs_linux_arm64.zip" \
-            "https://github.com/${REPO}/releases/download/${ECS_VERSION}/goecs_linux_arm64.zip"
+          gh release download "$ECS_VERSION" --repo "$REPO" --pattern "goecs_linux_arm64.zip" --output "/tmp/goecs_linux_arm64.zip"
           unzip -q -o "/tmp/goecs_linux_arm64.zip" -d /tmp/
           mv /tmp/goecs "${BINARIES_DIR}/goecs-linux-arm64"
           chmod +x "${BINARIES_DIR}/goecs-linux-arm64"
           
           # 下载 Linux AMD64（用于 Android x86_64）
           echo "下载 Linux AMD64..."
-          curl -L -f -o "/tmp/goecs_linux_amd64.zip" \
-            "https://github.com/${REPO}/releases/download/${ECS_VERSION}/goecs_linux_amd64.zip"
+          gh release download "$ECS_VERSION" --repo "$REPO" --pattern "goecs_linux_amd64.zip" --output "/tmp/goecs_linux_amd64.zip"
           unzip -q -o "/tmp/goecs_linux_amd64.zip" -d /tmp/
           mv /tmp/goecs "${BINARIES_DIR}/goecs-linux-amd64"
           chmod +x "${BINARIES_DIR}/goecs-linux-amd64"
@@ -128,6 +126,8 @@ jobs:
           echo "二进制文件列表:"
           ls -lh "${BINARIES_DIR}/"
           echo ""
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Update FyneApp.toml version
         run: |
@@ -271,8 +271,9 @@ jobs:
           
           mkdir -p "$BINARIES_DIR"
           
+          # 使用 gh CLI 获取最新版本（更简单可靠）
           echo "获取最新版本信息..."
-          ECS_VERSION=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          ECS_VERSION=$(gh release view --repo "$REPO" --json tagName --jq '.tagName')
           
           if [ -z "$ECS_VERSION" ]; then
             echo "错误: 无法获取最新版本"
@@ -282,13 +283,14 @@ jobs:
           echo "ECS 版本: $ECS_VERSION"
           echo "目标平台: $TARGET_OS/$TARGET_ARCH"
           
-          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${ECS_VERSION}/goecs_${TARGET_OS}_${TARGET_ARCH}.zip"
           OUTPUT_FILE="${BINARIES_DIR}/goecs-${TARGET_OS}-${TARGET_ARCH}"
+          PATTERN="goecs_${TARGET_OS}_${TARGET_ARCH}.zip"
           
           echo "下载 ${TARGET_OS}/${TARGET_ARCH}..."
-          echo "URL: $DOWNLOAD_URL"
+          echo "Pattern: $PATTERN"
           
-          curl -L -f -o "/tmp/goecs.zip" "$DOWNLOAD_URL"
+          # 下载到临时文件
+          gh release download "$ECS_VERSION" --repo "$REPO" --pattern "$PATTERN" --output "/tmp/goecs.zip"
           unzip -q -o "/tmp/goecs.zip" -d /tmp/
           
           if [ -f "/tmp/goecs.exe" ]; then
@@ -305,6 +307,8 @@ jobs:
           echo "二进制文件列表:"
           ls -lh "${BINARIES_DIR}/"
           echo ""
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Update FyneApp.toml version
         shell: bash
