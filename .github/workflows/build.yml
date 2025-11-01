@@ -40,7 +40,17 @@ jobs:
   build-android:
     name: Build Android APK
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            name: android-arm64
+          - os: ubuntu-latest
+            arch: amd64
+            name: android-x86_64
     
     steps:
       - name: Checkout code
@@ -94,6 +104,7 @@ jobs:
         run: |
           REPO="oneclickvirt/ecs"
           BINARIES_DIR="embedding/binaries"
+          TARGET_ARCH="${{ matrix.arch }}"
           
           mkdir -p "$BINARIES_DIR"
           
@@ -107,20 +118,17 @@ jobs:
           fi
           
           echo "ECS 版本: $ECS_VERSION"
+          echo "目标架构: $TARGET_ARCH"
           
-          # 下载 Linux ARM64（用于 Android ARM64）
-          echo "下载 Linux ARM64..."
-          gh release download "$ECS_VERSION" --repo "$REPO" --pattern "goecs_linux_arm64.zip" --output "/tmp/goecs_linux_arm64.zip"
-          unzip -q -o "/tmp/goecs_linux_arm64.zip" -d /tmp/
-          mv /tmp/goecs "${BINARIES_DIR}/goecs-linux-arm64"
-          chmod +x "${BINARIES_DIR}/goecs-linux-arm64"
+          # 根据架构下载对应的二进制
+          PATTERN="goecs_linux_${TARGET_ARCH}.zip"
+          OUTPUT_FILE="${BINARIES_DIR}/goecs-linux-${TARGET_ARCH}"
           
-          # 下载 Linux AMD64（用于 Android x86_64）
-          echo "下载 Linux AMD64..."
-          gh release download "$ECS_VERSION" --repo "$REPO" --pattern "goecs_linux_amd64.zip" --output "/tmp/goecs_linux_amd64.zip"
-          unzip -q -o "/tmp/goecs_linux_amd64.zip" -d /tmp/
-          mv /tmp/goecs "${BINARIES_DIR}/goecs-linux-amd64"
-          chmod +x "${BINARIES_DIR}/goecs-linux-amd64"
+          echo "下载 Linux ${TARGET_ARCH}..."
+          gh release download "$ECS_VERSION" --repo "$REPO" --pattern "$PATTERN" --output "/tmp/goecs.zip"
+          unzip -q -o "/tmp/goecs.zip" -d /tmp/
+          mv /tmp/goecs "$OUTPUT_FILE"
+          chmod +x "$OUTPUT_FILE"
           
           echo ""
           echo "二进制文件列表:"
@@ -134,38 +142,23 @@ jobs:
           sed -i "s/Version = .*/Version = \"${{ needs.prepare.outputs.version }}\"/" FyneApp.toml
           cat FyneApp.toml
       
-      - name: Build Android APK (arm64)
+      - name: Build Android APK (${{ matrix.arch }})
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
           GOPRIVATE: github.com/oneclickvirt/security
-          GOOS: android
-          GOARCH: arm64
-          CGO_ENABLED: 1
         run: |
-          fyne package --os android --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}" -tags "android,arm64"
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            fyne package --os android --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}"
+          else
+            fyne package --os android/amd64 --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}"
+          fi
+          
           if [ -f *.apk ]; then
             mkdir -p .build
-            mv *.apk .build/goecs-gui-android-arm64-${{ needs.prepare.outputs.version }}.apk
-            echo "ARM64 APK 构建成功"
+            mv *.apk .build/goecs-gui-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.apk
+            echo "${{ matrix.arch }} APK 构建成功"
           else
-            echo "ARM64 APK 构建失败"
-            exit 1
-          fi
-      
-      - name: Build Android APK (x86_64)
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-          GOPRIVATE: github.com/oneclickvirt/security
-          GOOS: android
-          GOARCH: amd64
-          CGO_ENABLED: 1
-        run: |
-          fyne package --os android/amd64 --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}" -tags "android,amd64"
-          if [ -f *.apk ]; then
-            mv *.apk .build/goecs-gui-android-x86_64-${{ needs.prepare.outputs.version }}.apk
-            echo "x86_64 APK 构建成功"
-          else
-            echo "x86_64 APK 构建失败"
+            echo "${{ matrix.arch }} APK 构建失败"
             exit 1
           fi
       
@@ -202,18 +195,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Upload ARM64 APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: goecs-gui-android-arm64-${{ needs.prepare.outputs.version }}
-          path: .build/goecs-gui-android-arm64-${{ needs.prepare.outputs.version }}.apk
-          retention-days: 90
-      
-      - name: Upload x86_64 APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: goecs-gui-android-x86_64-${{ needs.prepare.outputs.version }}
-          path: .build/goecs-gui-android-x86_64-${{ needs.prepare.outputs.version }}.apk
+          name: goecs-gui-${{ matrix.name }}-${{ needs.prepare.outputs.version }}
+          path: .build/goecs-gui-${{ matrix.name }}-${{ needs.prepare.outputs.version }}.apk
           retention-days: 90
 
   build-desktop:
