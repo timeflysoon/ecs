@@ -141,7 +141,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
           GOPRIVATE: github.com/oneclickvirt/security
         run: |
-          fyne package --os android --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}" --tags mobile
+          fyne package --os android --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}" --tags fyne_mobile
           if [ -f *.apk ]; then
             mkdir -p .build
             mv *.apk .build/goecs-gui-android-arm64-${{ needs.prepare.outputs.version }}.apk
@@ -156,7 +156,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
           GOPRIVATE: github.com/oneclickvirt/security
         run: |
-          fyne package --os android/amd64 --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}" --tags mobile
+          fyne package --os android/amd64 --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}" --tags fyne_mobile
           if [ -f *.apk ]; then
             mv *.apk .build/goecs-gui-android-x86_64-${{ needs.prepare.outputs.version }}.apk
             echo "x86_64 APK 构建成功"

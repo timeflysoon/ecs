@@ -1,4 +1,4 @@
-//go:build mobile && amd64
+//go:build fyne_mobile && amd64
 
 package embedding
 
