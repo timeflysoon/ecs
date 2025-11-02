@@ -37,3 +37,20 @@ func (ui *TestUI) resetUIState() {
 	ui.ProgressBar.Hide()
 	ui.ProgressBar.SetValue(0)
 }
+
+// GetSelectedOptions 获取所有选中的测试选项
+func (ui *TestUI) GetSelectedOptions() map[string]bool {
+	return map[string]bool{
+		"basic":     ui.BasicCheck.Checked,
+		"cpu":       ui.CpuCheck.Checked,
+		"memory":    ui.MemoryCheck.Checked,
+		"disk":      ui.DiskCheck.Checked,
+		"comm":      ui.CommCheck.Checked,
+		"unlock":    ui.UnlockCheck.Checked,
+		"security":  ui.SecurityCheck.Checked,
+		"email":     ui.EmailCheck.Checked,
+		"backtrace": ui.BacktraceCheck.Checked,
+		"nt3":       ui.Nt3Check.Checked,
+		"speed":     ui.SpeedCheck.Checked,
+	}
+}

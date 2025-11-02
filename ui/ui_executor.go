@@ -17,24 +17,25 @@ func (ui *TestUI) runTestsWithExecutor() {
 	startTime := time.Now()
 
 	// 创建命令执行器
-	executor, err := NewCommandExecutor(ui, ui.CancelCtx)
-	if err != nil {
-		ui.Terminal.AppendText(fmt.Sprintf("错误: %v\n", err))
-		ui.StatusLabel.SetText("测试失败")
-		return
-	}
-	defer executor.Cleanup()
+	executor := NewCommandExecutor(func(text string) {
+		ui.Terminal.AppendText(text)
+	})
 
-	// 显示将要执行的命令
-	cmdPreview := executor.GetCommandPreview()
-	ui.Terminal.AppendText(fmt.Sprintf("执行命令: %s\n", cmdPreview))
+	// 获取选择的测试选项
+	selectedOptions := ui.GetSelectedOptions()
+
+	// 获取选择的语言
+	language := "zh"
+	if ui.LanguageSelect.Selected == "English" {
+		language = "en"
+	}
 
 	// 更新进度
 	ui.ProgressBar.SetValue(0.1)
 	ui.StatusLabel.SetText("正在执行测试...")
 
 	// 执行测试（输出会实时显示在terminal widget中）
-	err = executor.Execute()
+	err := executor.Execute(selectedOptions, language)
 
 	// 显示结束信息
 	endTime := time.Now()
@@ -57,6 +58,4 @@ func (ui *TestUI) runTestsWithExecutor() {
 			ui.refreshLogFromFile()
 		}
 	}
-
-	ui.Terminal.AppendText("==========================================\n")
 }
