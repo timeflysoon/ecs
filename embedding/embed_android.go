@@ -13,7 +13,14 @@ import (
 // findNativeLibraryDir 查找应用的 native library 目录
 // 这个目录是系统自动管理的，包含从 APK 中提取的 .so 文件
 func findNativeLibraryDir() (string, error) {
-	// 方法 1: 通过可执行文件路径推断
+	// 方法 1: 通过环境变量获取（Fyne 可能会设置）
+	if libDir := os.Getenv("ANDROID_LIB_DIR"); libDir != "" {
+		if info, err := os.Stat(libDir); err == nil && info.IsDir() {
+			return libDir, nil
+		}
+	}
+
+	// 方法 2: 通过可执行文件路径推断
 	execPath, err := os.Executable()
 	if err == nil {
 		// 可执行文件通常在 /data/app/<package>-<hash>/base.apk 或 /data/app/<package>-<hash>/oat/arm64/base.odex
@@ -21,29 +28,26 @@ func findNativeLibraryDir() (string, error) {
 
 		// 尝试找到应用根目录
 		dir := execPath
-		for i := 0; i < 5; i++ { // 最多向上查找5层
+		for i := 0; i < 10; i++ { // 最多向上查找10层
 			dir = filepath.Dir(dir)
+			if dir == "/" || dir == "." {
+				break
+			}
+
 			libDir := filepath.Join(dir, "lib")
 
 			// 检查 lib 目录
 			if info, err := os.Stat(libDir); err == nil && info.IsDir() {
-				// 检查是否包含架构子目录
+				// 检查是否包含架构子目录或 .so 文件
 				entries, err := os.ReadDir(libDir)
 				if err == nil && len(entries) > 0 {
-					// 如果 lib 目录有子目录（架构名），返回 lib 目录
-					for _, entry := range entries {
-						if entry.IsDir() {
-							return libDir, nil
-						}
-					}
-					// 如果 lib 目录直接包含 .so 文件，也返回
 					return libDir, nil
 				}
 			}
 		}
 	}
 
-	// 方法 2: 尝试标准的 Android native library 路径
+	// 方法 3: 尝试标准的 Android native library 路径
 	possibleBasePaths := []string{
 		"/data/data/com.oneclickvirt.goecs/lib",
 		"/data/app/com.oneclickvirt.goecs/lib",
@@ -69,7 +73,7 @@ func findNativeLibraryDir() (string, error) {
 		}
 	}
 
-	// 方法 3: 搜索 /data/app 目录
+	// 方法 4: 搜索 /data/app 目录
 	dataAppDir := "/data/app"
 	if entries, err := os.ReadDir(dataAppDir); err == nil {
 		for _, entry := range entries {
@@ -82,23 +86,31 @@ func findNativeLibraryDir() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("无法找到 native library 目录")
-}
-
-// getLibraryName 获取当前架构对应的库名称
-func getLibraryName() string {
-	switch runtime.GOARCH {
-	case "arm64":
-		return "libgoecs_arm64.so"
-	case "amd64":
-		return "libgoecs_amd64.so"
-	case "arm":
-		return "libgoecs_arm.so"
-	case "386":
-		return "libgoecs_386.so"
-	default:
-		return "libgoecs.so"
+	// 方法 5: 尝试通过 /proc/self/maps 查找已加载的共享库路径
+	if mapsData, err := os.ReadFile("/proc/self/maps"); err == nil {
+		lines := strings.Split(string(mapsData), "\n")
+		for _, line := range lines {
+			// 查找包含 .so 的行
+			if strings.Contains(line, ".so") && strings.Contains(line, "/data/") {
+				// 提取路径部分
+				parts := strings.Fields(line)
+				if len(parts) >= 6 {
+					soPath := parts[5]
+					// 获取库目录
+					libDir := filepath.Dir(soPath)
+					// 向上查找到 lib 目录
+					for i := 0; i < 3; i++ {
+						if filepath.Base(libDir) == "lib" {
+							return libDir, nil
+						}
+						libDir = filepath.Dir(libDir)
+					}
+				}
+			}
+		}
 	}
+
+	return "", fmt.Errorf("无法找到 native library 目录")
 }
 
 // ExtractECSBinary 获取 ECS 二进制文件路径
@@ -106,15 +118,28 @@ func getLibraryName() string {
 func ExtractECSBinary() (string, error) {
 	// 获取 native library 目录
 	libDir, err := findNativeLibraryDir()
+	debugInfo := fmt.Sprintf("架构: %s/%s\n", runtime.GOOS, runtime.GOARCH)
+
 	if err != nil {
-		return "", fmt.Errorf("获取 native library 目录失败: %v", err)
+		debugInfo += fmt.Sprintf("查找 lib 目录失败: %v\n", err)
+	} else {
+		debugInfo += fmt.Sprintf("找到 lib 目录: %s\n", libDir)
+
+		// 列出 lib 目录内容
+		if entries, err := os.ReadDir(libDir); err == nil {
+			debugInfo += fmt.Sprintf("lib 目录内容 (%d 项):\n", len(entries))
+			for _, entry := range entries {
+				entryType := "文件"
+				if entry.IsDir() {
+					entryType = "目录"
+				}
+				debugInfo += fmt.Sprintf("  - %s (%s)\n", entry.Name(), entryType)
+			}
+		}
 	}
 
-	// 尝试的文件名列表（按优先级）
-	possibleNames := []string{
-		"libgoecs.so",    // 通用名称
-		getLibraryName(), // 带架构后缀的名称
-	}
+	// 库名称固定为 libgoecs.so
+	libraryName := "libgoecs.so"
 
 	// 尝试的子目录（Android ABI 名称）
 	abiDirs := []string{
@@ -135,14 +160,15 @@ func ExtractECSBinary() (string, error) {
 
 	// 尝试所有可能的路径组合
 	var checkedPaths []string
-	for _, abiDir := range abiDirs {
-		baseDir := libDir
-		if abiDir != "" {
-			baseDir = filepath.Join(libDir, abiDir)
-		}
 
-		for _, name := range possibleNames {
-			ecsPath := filepath.Join(baseDir, name)
+	if err == nil {
+		for _, abiDir := range abiDirs {
+			baseDir := libDir
+			if abiDir != "" {
+				baseDir = filepath.Join(libDir, abiDir)
+			}
+
+			ecsPath := filepath.Join(baseDir, libraryName)
 			checkedPaths = append(checkedPaths, ecsPath)
 
 			if info, err := os.Stat(ecsPath); err == nil && !info.IsDir() {
@@ -155,10 +181,31 @@ func ExtractECSBinary() (string, error) {
 		}
 	}
 
+	// 如果上述方法都失败，尝试在常见位置查找
+	// 注意：不再查找 /system/lib，因为那是系统库位置
+	fallbackPaths := []string{
+		"/data/local/tmp/libgoecs.so", // 临时目录（需要 root）
+	}
+
+	for _, path := range fallbackPaths {
+		checkedPaths = append(checkedPaths, path)
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			return path, nil
+		}
+	}
+
 	// 未找到文件，返回详细错误信息
-	return "", fmt.Errorf("找不到 ECS 二进制文件\n已检查的路径:\n  %s\n\n请确保:\n1. ECS 二进制文件已编译为 Android 版本\n2. 文件已放置在 jniLibs/%s/libgoecs.so\n3. APK 已重新打包",
+	recommendedABI := "arm64-v8a"
+	if runtime.GOARCH == "amd64" || runtime.GOARCH == "386" {
+		recommendedABI = "x86_64"
+	}
+
+	return "", fmt.Errorf("找不到 ECS 二进制文件\n\n调试信息:\n%s\n已检查的路径:\n  %s\n\n请确保:\n1. ECS 二进制文件已编译为 Android 版本（Linux/%s）\n2. 文件已放置在 jniLibs/%s/libgoecs.so\n3. APK 已重新打包\n4. 当前架构: %s",
+		debugInfo,
 		strings.Join(checkedPaths, "\n  "),
-		abiDirs[1]) // 显示推荐的 ABI 目录
+		runtime.GOARCH,
+		recommendedABI,
+		runtime.GOARCH)
 }
 
 // CleanupECSBinary 清理函数

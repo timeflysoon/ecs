@@ -212,6 +212,50 @@ build_linux() {
     fi
 }
 
+# 准备 Android 的 jniLibs
+prepare_android_jnilibs() {
+    echo "=========================================="
+    echo "  准备 Android JNI 库"
+    echo "=========================================="
+    
+    # 下载 ARM64 版本的 ECS 二进制
+    echo "下载 ARM64 ECS 二进制..."
+    download_ecs_binary "linux" "arm64"
+    
+    # 下载 x86_64 版本的 ECS 二进制
+    echo "下载 x86_64 ECS 二进制..."
+    download_ecs_binary "linux" "amd64"
+    
+    # 创建 jniLibs 目录结构
+    mkdir -p jniLibs/arm64-v8a
+    mkdir -p jniLibs/x86_64
+    
+    # 复制二进制文件并重命名为 .so 库格式
+    if [ -f "embedding/binaries/goecs-linux-arm64" ]; then
+        cp "embedding/binaries/goecs-linux-arm64" "jniLibs/arm64-v8a/libgoecs.so"
+        chmod 755 "jniLibs/arm64-v8a/libgoecs.so"
+        echo "✓ ARM64 库已准备: jniLibs/arm64-v8a/libgoecs.so"
+        echo "  文件大小: $(du -h jniLibs/arm64-v8a/libgoecs.so | cut -f1)"
+    else
+        echo "✗ 错误: 未找到 ARM64 ECS 二进制文件"
+        exit 1
+    fi
+    
+    if [ -f "embedding/binaries/goecs-linux-amd64" ]; then
+        cp "embedding/binaries/goecs-linux-amd64" "jniLibs/x86_64/libgoecs.so"
+        chmod 755 "jniLibs/x86_64/libgoecs.so"
+        echo "✓ x86_64 库已准备: jniLibs/x86_64/libgoecs.so"
+        echo "  文件大小: $(du -h jniLibs/x86_64/libgoecs.so | cut -f1)"
+    else
+        echo "✗ 错误: 未找到 x86_64 ECS 二进制文件"
+        exit 1
+    fi
+    
+    echo ""
+    echo "JNI 库准备完成！"
+    echo ""
+}
+
 # Android 构建
 build_android() {
     VERSION=$(get_version)
@@ -227,31 +271,20 @@ build_android() {
     
     mkdir -p .build
     
-    echo ""
-    echo "构建 Android ARM64 版本..."
-    download_ecs_binary "linux" "arm64"
+    # 准备 JNI 库
+    prepare_android_jnilibs
     
+    echo ""
+    echo "构建 Android APK..."
+    
+    # 构建包含所有架构的 APK
     fyne package -os android -appID com.oneclickvirt.goecs -appVersion "$VERSION"
     
     if [ -f *.apk ]; then
-        mv *.apk .build/goecs-android-arm64-${VERSION}.apk
-        echo "Android ARM64 APK 构建成功"
+        mv *.apk .build/goecs-android-${VERSION}.apk
+        echo "Android APK 构建成功"
     else
-        echo "Android ARM64 APK 构建失败"
-        exit 1
-    fi
-    
-    echo ""
-    echo "构建 Android x86_64 版本..."
-    download_ecs_binary "linux" "amd64"
-    
-    fyne package -os android/amd64 -appID com.oneclickvirt.goecs -appVersion "$VERSION"
-    
-    if [ -f *.apk ]; then
-        mv *.apk .build/goecs-android-x86_64-${VERSION}.apk
-        echo "Android x86_64 APK 构建成功"
-    else
-        echo "Android x86_64 APK 构建失败"
+        echo "Android APK 构建失败"
         exit 1
     fi
     
