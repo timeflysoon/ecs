@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -158,8 +159,20 @@ func (e *CommandExecutor) Execute() error {
 	args := e.buildCommandArgs()
 	e.mu.Unlock()
 
-	// 创建命令
-	cmd := exec.CommandContext(e.cancelCtx, e.ecsPath, args...)
+	var cmd *exec.Cmd
+	var cmdStr string
+
+	// 在 Android 上使用 proot 运行 Linux 二进制文件
+	if runtime.GOOS == "android" {
+		// Android 平台：尝试使用 proot，如果失败则直接运行
+		cmd, cmdStr = e.createAndroidCommand(args)
+	} else {
+		// 非 Android 平台直接运行
+		cmd = exec.CommandContext(e.cancelCtx, e.ecsPath, args...)
+		cmdStr = fmt.Sprintf("执行命令: %s %s", e.ecsPath, strings.Join(args, " "))
+	}
+
+	e.ui.Terminal.AppendText(cmdStr + "\n\n")
 
 	// 直接将stdout和stderr连接到终端widget
 	stdout, err := cmd.StdoutPipe()
