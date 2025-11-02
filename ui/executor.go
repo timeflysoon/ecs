@@ -5,15 +5,20 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/oneclickvirt/CommonMediaTests/commediatests"
 	"github.com/oneclickvirt/basics/utils"
 	"github.com/oneclickvirt/ecs/cputest"
 	"github.com/oneclickvirt/ecs/disktest"
 	"github.com/oneclickvirt/ecs/memorytest"
+	"github.com/oneclickvirt/ecs/nexttrace"
+	"github.com/oneclickvirt/ecs/speedtest"
 	"github.com/oneclickvirt/ecs/unlocktest"
+	"github.com/oneclickvirt/ecs/upstreams"
 	ecsutils "github.com/oneclickvirt/ecs/utils"
 	"github.com/oneclickvirt/pingtest/pt"
 	"github.com/oneclickvirt/portchecker/email"
@@ -31,21 +36,32 @@ func NewCommandExecutor(outputCallback func(string)) *CommandExecutor {
 	}
 }
 
-func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language string) error {
-	// 设置测试选项（模仿 main 函数中的变量）
+func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language string, testUpload bool, testDownload bool, chinaModeEnabled bool) error {
+	// 设置测试选项
 	basicStatus := selectedOptions["basic"]
 	cpuTestStatus := selectedOptions["cpu"]
 	memoryTestStatus := selectedOptions["memory"]
 	diskTestStatus := selectedOptions["disk"]
+	commTestStatus := selectedOptions["comm"]
 	utTestStatus := selectedOptions["unlock"]
 	securityTestStatus := selectedOptions["security"]
 	emailTestStatus := selectedOptions["email"]
+	backtraceStatus := selectedOptions["backtrace"]
+	nt3Status := selectedOptions["nt3"]
 	speedTestStatus := selectedOptions["speed"]
+	pingTestStatus := selectedOptions["ping"]
+
+	// 中国模式逻辑：禁用流媒体测试，启用PING测试
+	if chinaModeEnabled {
+		commTestStatus = false
+		utTestStatus = false
+		pingTestStatus = true
+	}
 
 	// 检查网络连接
 	preCheck := utils.CheckPublicAccess(3 * time.Second)
 
-	// 初始化变量（完全模仿 main 函数）
+	// 初始化变量
 	var (
 		wg1, wg2                                      sync.WaitGroup
 		basicInfo, securityInfo, emailInfo, mediaInfo string
@@ -64,14 +80,30 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 
 	done := make(chan bool)
 	go func() {
-		buf := make([]byte, 1024)
+		buf := make([]byte, 8192) // 增加缓冲区大小
+		var partial string        // 用于保存不完整的行
 		for {
 			n, err := r.Read(buf)
 			if n > 0 && e.outputCallback != nil {
-				e.outputCallback(string(buf[:n]))
+				text := partial + string(buf[:n])
+				// 找到最后一个换行符
+				lastNewline := strings.LastIndex(text, "\n")
+				if lastNewline >= 0 {
+					// 输出完整的行
+					e.outputCallback(text[:lastNewline+1])
+					// 保存不完整的部分
+					partial = text[lastNewline+1:]
+				} else {
+					// 没有换行符，全部保存为不完整部分
+					partial = text
+				}
 			}
 			if err != nil {
 				if err == io.EOF {
+					// 输出剩余的不完整部分
+					if partial != "" && e.outputCallback != nil {
+						e.outputCallback(partial)
+					}
 					break
 				}
 			}
@@ -79,8 +111,8 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		done <- true
 	}()
 
-	// 执行测试（模仿 runChineseTests/runEnglishTests 的逻辑）
-	// 基础信息测试
+	// 执行测试（参考原goecs.go的runChineseTests和runEnglishTests顺序）
+	// 1. 基础信息测试
 	if basicStatus || securityTestStatus {
 		outputMutex.Lock()
 		ecsutils.PrintHead(language, 82, ecsVersion)
@@ -100,7 +132,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		outputMutex.Unlock()
 	}
 
-	// CPU测试
+	// 2. CPU测试
 	if cpuTestStatus {
 		outputMutex.Lock()
 		realTestMethod, res := cputest.CpuTest(language, "sysbench", "multi")
@@ -113,7 +145,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		outputMutex.Unlock()
 	}
 
-	// 内存测试
+	// 3. 内存测试
 	if memoryTestStatus {
 		outputMutex.Lock()
 		realTestMethod, res := memorytest.MemoryTest(language, "auto")
@@ -126,7 +158,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		outputMutex.Unlock()
 	}
 
-	// 磁盘测试
+	// 4. 磁盘测试
 	if diskTestStatus {
 		outputMutex.Lock()
 		realTestMethod, res := disktest.DiskTest(language, "fio", "", false, true)
@@ -139,7 +171,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		outputMutex.Unlock()
 	}
 
-	// 流媒体解锁测试
+	// 5. 启动异步测试（流媒体解锁和邮件端口）
 	if utTestStatus && preCheck.Connected {
 		wg1.Add(1)
 		go func() {
@@ -148,7 +180,6 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		}()
 	}
 
-	// 邮件端口测试
 	if emailTestStatus && preCheck.Connected {
 		wg2.Add(1)
 		go func() {
@@ -157,7 +188,16 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		}()
 	}
 
-	// 显示流媒体解锁结果
+	// 6. 御三家流媒体测试（仅中文）
+	if commTestStatus && preCheck.Connected && language == "zh" {
+		outputMutex.Lock()
+		ecsutils.PrintCenteredTitle("御三家流媒体测试", 82)
+		commInfo := commediatests.MediaTests(language)
+		fmt.Print(commInfo)
+		outputMutex.Unlock()
+	}
+
+	// 7. 显示跨国流媒体解锁结果
 	if utTestStatus && preCheck.Connected {
 		wg1.Wait()
 		outputMutex.Lock()
@@ -170,7 +210,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		outputMutex.Unlock()
 	}
 
-	// 显示IP质量检测结果
+	// 8. 显示IP质量检测结果
 	if securityTestStatus && preCheck.Connected {
 		outputMutex.Lock()
 		if language == "zh" {
@@ -182,7 +222,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		outputMutex.Unlock()
 	}
 
-	// 显示邮件端口测试结果
+	// 9. 显示邮件端口测试结果
 	if emailTestStatus && preCheck.Connected {
 		wg2.Wait()
 		outputMutex.Lock()
@@ -195,10 +235,63 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		outputMutex.Unlock()
 	}
 
-	// 速度测试（简化版）
+	// 10. 上游及回程线路检测
+	if backtraceStatus && preCheck.Connected {
+		outputMutex.Lock()
+		if language == "zh" {
+			ecsutils.PrintCenteredTitle("上游及回程线路检测", 82)
+		} else {
+			ecsutils.PrintCenteredTitle("Upstreams-Backtrace-Check", 82)
+		}
+		upstreams.UpstreamsCheck()
+		outputMutex.Unlock()
+	}
+
+	// 11. 三网回程路由检测
+	if nt3Status && preCheck.Connected {
+		outputMutex.Lock()
+		if language == "zh" {
+			ecsutils.PrintCenteredTitle("三网回程路由检测", 82)
+		} else {
+			ecsutils.PrintCenteredTitle("NextTrace-3Networks-Check", 82)
+		}
+		nexttrace.NextTrace3Check(language, "GZ", "ipv4")
+		outputMutex.Unlock()
+	}
+
+	// 12. PING值测试
+	if pingTestStatus && preCheck.Connected {
+		outputMutex.Lock()
+		if language == "zh" {
+			ecsutils.PrintCenteredTitle("三网PING值检测", 82)
+		} else {
+			ecsutils.PrintCenteredTitle("Three-Network-PING-Test", 82)
+		}
+		pingResult := pt.PingTest()
+		fmt.Print(pingResult)
+		outputMutex.Unlock()
+	}
+
+	// 13. 速度测试
 	if speedTestStatus && preCheck.Connected {
-		// 这里可以添加速度测试，但需要导入 speedtest 包
-		_ = pt.PingTest // 避免未使用的导入
+		outputMutex.Lock()
+		if language == "zh" {
+			ecsutils.PrintCenteredTitle("就近节点测速", 82)
+		} else {
+			ecsutils.PrintCenteredTitle("Speed-Test", 82)
+		}
+		speedtest.ShowHead(language)
+
+		// 根据上传/下载配置进行测试
+		if testUpload || testDownload {
+			speedtest.NearbySP()
+			if language == "zh" {
+				speedtest.CustomSP("net", "global", 2, language)
+			} else {
+				speedtest.CustomSP("net", "global", -1, language)
+			}
+		}
+		outputMutex.Unlock()
 	}
 
 	// 打印时间信息

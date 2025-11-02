@@ -30,12 +30,19 @@ func (ui *TestUI) runTestsWithExecutor() {
 		language = "en"
 	}
 
+	// 获取速度测试配置
+	testUpload := ui.SpTestUploadCheck.Checked
+	testDownload := ui.SpTestDownloadCheck.Checked
+
+	// 获取中国模式配置
+	chinaModeEnabled := ui.ChinaModeCheck.Checked
+
 	// 更新进度
 	ui.ProgressBar.SetValue(0.1)
 	ui.StatusLabel.SetText("正在执行测试...")
 
 	// 执行测试（输出会实时显示在terminal widget中）
-	err := executor.Execute(selectedOptions, language)
+	err := executor.Execute(selectedOptions, language, testUpload, testDownload, chinaModeEnabled)
 
 	// 显示结束信息
 	endTime := time.Now()

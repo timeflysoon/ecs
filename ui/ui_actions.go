@@ -16,6 +16,8 @@ func (ui *TestUI) onPresetChanged(preset string) {
 	switch preset {
 	case "1. 融合怪完全体(能测全测)":
 		ui.setAllChecks(true)
+		// 注意：原goecs.go的完全体不包括ping测试，ping仅在选项6和10或中国模式下启用
+		ui.PingCheck.Checked = false
 	case "2. 极简版(系统+CPU+内存+磁盘+5测速节点)":
 		ui.setAllChecks(false)
 		ui.BasicCheck.Checked = true
@@ -51,17 +53,20 @@ func (ui *TestUI) onPresetChanged(preset string) {
 		ui.UnlockCheck.Checked = true
 		ui.SpeedCheck.Checked = true
 	case "6. 仅网络测试(IP质量+5测速节点)":
+		// 对应原goecs.go的选项6: setNetworkOnlyTestStatus
 		ui.setAllChecks(false)
 		ui.SecurityCheck.Checked = true
 		ui.SpeedCheck.Checked = true
 		ui.BacktraceCheck.Checked = true
 		ui.Nt3Check.Checked = true
-		ui.PingCheck.Checked = true
+		ui.PingCheck.Checked = true // 原代码在此选项启用ping
 	case "7. 仅解锁测试(基础解锁+常用流媒体解锁)":
+		// 对应原goecs.go的选项7: setUnlockOnlyTestStatus
 		ui.setAllChecks(false)
 		ui.CommCheck.Checked = true
 		ui.UnlockCheck.Checked = true
 	case "8. 仅硬件测试(系统+CPU+内存+dd磁盘+fio磁盘)":
+		// 对应原goecs.go的选项8: setHardwareOnlyTestStatus
 		ui.setAllChecks(false)
 		ui.BasicCheck.Checked = true
 		ui.CpuCheck.Checked = true
@@ -69,9 +74,17 @@ func (ui *TestUI) onPresetChanged(preset string) {
 		ui.DiskCheck.Checked = true
 		ui.DiskMethodSelect.Selected = "fio"
 	case "9. IP质量测试(IP测试+15数据库+邮件端口)":
+		// 对应原goecs.go的选项9: setIPQualityTestStatus
 		ui.setAllChecks(false)
 		ui.SecurityCheck.Checked = true
 		ui.EmailCheck.Checked = true
+	case "10. 三网回程路由检测(回程路由+详细路由+三网延迟)":
+		// 对应原goecs.go的选项10: setRouteTestStatus + nt3Location = "ALL"
+		ui.setAllChecks(false)
+		ui.BacktraceCheck.Checked = true
+		ui.Nt3Check.Checked = true
+		ui.PingCheck.Checked = true           // 原代码在此选项启用ping
+		ui.Nt3LocationSelect.Selected = "ALL" // 设置为全部地点
 	default: // 自定义
 		return
 	}

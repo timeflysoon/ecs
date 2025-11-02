@@ -21,6 +21,7 @@ func (ui *TestUI) createOptionsPanel() fyne.CanvasObject {
 			"7. 仅解锁测试(基础解锁+常用流媒体解锁)",
 			"8. 仅硬件测试(系统+CPU+内存+dd磁盘+fio磁盘)",
 			"9. IP质量测试(IP测试+15数据库+邮件端口)",
+			"10. 三网回程路由检测(回程路由+详细路由+三网延迟)",
 		},
 		ui.onPresetChanged,
 	)
@@ -185,6 +186,17 @@ func (ui *TestUI) createConfigSection() fyne.CanvasObject {
 	ui.SpNumEntry.SetText("2")
 	ui.SpNumEntry.SetPlaceHolder("每运营商测速节点数")
 
+	// 速度测试上传下载控制
+	ui.SpTestUploadCheck = widget.NewCheck("测试上传速度", nil)
+	ui.SpTestUploadCheck.Checked = true
+
+	ui.SpTestDownloadCheck = widget.NewCheck("测试下载速度", nil)
+	ui.SpTestDownloadCheck.Checked = true
+
+	// 中国模式
+	ui.ChinaModeCheck = widget.NewCheck("启用中国专项测试", nil)
+	ui.ChinaModeCheck.Checked = false
+
 	// 使用表单布局更紧凑
 	configForm := container.NewVBox(
 		widget.NewLabel("通用配置:"),
@@ -193,6 +205,10 @@ func (ui *TestUI) createConfigSection() fyne.CanvasObject {
 			ui.LanguageSelect,
 		),
 		ui.LogCheck, // 日志选项
+		widget.NewSeparator(),
+		widget.NewLabel("中国专项测试:"),
+		ui.ChinaModeCheck,
+		widget.NewLabel("(启用后将禁用流媒体测试，启用PING测试)"),
 		widget.NewSeparator(),
 		widget.NewLabel("CPU配置:"),
 		container.NewGridWithColumns(2,
@@ -230,6 +246,9 @@ func (ui *TestUI) createConfigSection() fyne.CanvasObject {
 			widget.NewLabel("节点数/运营商:"),
 			ui.SpNumEntry,
 		),
+		ui.SpTestUploadCheck,
+		ui.SpTestDownloadCheck,
+		// PING测试配置已隐藏 - pingtest包目前没有额外可配置参数
 	)
 
 	return widget.NewCard("详细配置", "调整测试参数", configForm)

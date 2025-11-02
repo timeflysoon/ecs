@@ -43,6 +43,12 @@ type TestUI struct {
 	Nt3TypeSelect      *widget.Select
 	DiskMultiCheck     *widget.Check
 	SpNumEntry         *widget.Entry
+	// 速度测试配置
+	SpTestUploadCheck   *widget.Check // 测试上传速度
+	SpTestDownloadCheck *widget.Check // 测试下载速度
+	// 中国模式
+	ChinaModeCheck *widget.Check // 启用中国专项测试
+	// PING测试配置（预留，pingtest包目前没有额外参数）
 
 	// 控制按钮
 	StartButton *widget.Button

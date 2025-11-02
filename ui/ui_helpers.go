@@ -52,5 +52,6 @@ func (ui *TestUI) GetSelectedOptions() map[string]bool {
 		"backtrace": ui.BacktraceCheck.Checked,
 		"nt3":       ui.Nt3Check.Checked,
 		"speed":     ui.SpeedCheck.Checked,
+		"ping":      ui.PingCheck.Checked,
 	}
 }
