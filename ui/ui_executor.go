@@ -37,12 +37,55 @@ func (ui *TestUI) runTestsWithExecutor() {
 	// 获取中国模式配置
 	chinaModeEnabled := ui.ChinaModeCheck.Checked
 
+	// 获取CPU配置
+	cpuMethod := ui.CpuMethodSelect.Selected
+	if cpuMethod == "" {
+		cpuMethod = "sysbench"
+	}
+	threadMode := ui.ThreadModeSelect.Selected
+	if threadMode == "" {
+		threadMode = "multi"
+	}
+
+	// 获取内存配置
+	memoryMethod := ui.MemoryMethodSelect.Selected
+	if memoryMethod == "" {
+		memoryMethod = "auto"
+	}
+
+	// 获取磁盘配置
+	diskMethod := ui.DiskMethodSelect.Selected
+	if diskMethod == "" {
+		diskMethod = "auto"
+	}
+	diskPath := ui.DiskPathEntry.Text
+	diskMulti := ui.DiskMultiCheck.Checked
+
+	// 获取NT3配置
+	nt3Location := ui.Nt3LocationSelect.Selected
+	if nt3Location == "" {
+		nt3Location = "GZ"
+	}
+	nt3Type := ui.Nt3TypeSelect.Selected
+	if nt3Type == "" {
+		nt3Type = "ipv4"
+	}
+
+	// 获取测速节点数
+	spNum := 2 // 默认值
+	if ui.SpNumEntry.Text != "" {
+		// 尝试解析spNum，如果失败则使用默认值
+		fmt.Sscanf(ui.SpNumEntry.Text, "%d", &spNum)
+	}
+
 	// 更新进度
 	ui.ProgressBar.SetValue(0.1)
 	ui.StatusLabel.SetText("正在执行测试...")
 
 	// 执行测试（输出会实时显示在terminal widget中）
-	err := executor.Execute(selectedOptions, language, testUpload, testDownload, chinaModeEnabled)
+	err := executor.Execute(selectedOptions, language, testUpload, testDownload, chinaModeEnabled,
+		cpuMethod, threadMode, memoryMethod, diskMethod, diskPath, diskMulti,
+		nt3Location, nt3Type, spNum)
 
 	// 显示结束信息
 	endTime := time.Now()

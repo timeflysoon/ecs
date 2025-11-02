@@ -36,7 +36,9 @@ func NewCommandExecutor(outputCallback func(string)) *CommandExecutor {
 	}
 }
 
-func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language string, testUpload bool, testDownload bool, chinaModeEnabled bool) error {
+func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language string, testUpload bool, testDownload bool, chinaModeEnabled bool,
+	cpuMethod, threadMode, memoryMethod, diskMethod, diskPath string, diskMulti bool,
+	nt3Location, nt3Type string, spNum int) error {
 	// 设置测试选项
 	basicStatus := selectedOptions["basic"]
 	cpuTestStatus := selectedOptions["cpu"]
@@ -135,7 +137,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	// 2. CPU测试
 	if cpuTestStatus {
 		outputMutex.Lock()
-		realTestMethod, res := cputest.CpuTest(language, "sysbench", "multi")
+		realTestMethod, res := cputest.CpuTest(language, cpuMethod, threadMode)
 		if language == "zh" {
 			ecsutils.PrintCenteredTitle(fmt.Sprintf("CPU测试-通过%s测试", realTestMethod), 82)
 		} else {
@@ -148,7 +150,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	// 3. 内存测试
 	if memoryTestStatus {
 		outputMutex.Lock()
-		realTestMethod, res := memorytest.MemoryTest(language, "auto")
+		realTestMethod, res := memorytest.MemoryTest(language, memoryMethod)
 		if language == "zh" {
 			ecsutils.PrintCenteredTitle(fmt.Sprintf("内存测试-通过%s测试", realTestMethod), 82)
 		} else {
@@ -161,7 +163,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	// 4. 磁盘测试
 	if diskTestStatus {
 		outputMutex.Lock()
-		realTestMethod, res := disktest.DiskTest(language, "fio", "", false, true)
+		realTestMethod, res := disktest.DiskTest(language, diskMethod, diskPath, diskMulti, true)
 		if language == "zh" {
 			ecsutils.PrintCenteredTitle(fmt.Sprintf("硬盘测试-通过%s测试", realTestMethod), 82)
 		} else {
@@ -255,7 +257,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		} else {
 			ecsutils.PrintCenteredTitle("NextTrace-3Networks-Check", 82)
 		}
-		nexttrace.NextTrace3Check(language, "GZ", "ipv4")
+		nexttrace.NextTrace3Check(language, nt3Location, nt3Type)
 		outputMutex.Unlock()
 	}
 
@@ -286,7 +288,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		if testUpload || testDownload {
 			speedtest.NearbySP()
 			if language == "zh" {
-				speedtest.CustomSP("net", "global", 2, language)
+				speedtest.CustomSP("net", "global", spNum, language)
 			} else {
 				speedtest.CustomSP("net", "global", -1, language)
 			}
