@@ -42,6 +42,9 @@ func runGUIMode() {
 	myApp := app.NewWithID("com.oneclickvirt.goecs")
 	myApp.Settings().SetTheme(&ui.CustomTheme{})
 
+	// 设置为浅色主题
+	myApp.Settings().SetTheme(&ui.CustomTheme{})
+
 	testUI := ui.NewTestUI(myApp)
 	testUI.Window.ShowAndRun()
 }

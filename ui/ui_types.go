@@ -54,9 +54,10 @@ type TestUI struct {
 	StatusLabel *widget.Label
 
 	// 日志相关
-	LogViewer *widget.Entry      // 日志查看器
-	LogTab    *fyne.Container    // 日志标签页内容
-	MainTabs  *container.AppTabs // 主标签页容器
+	LogViewer  *widget.Entry      // 日志查看器
+	LogTab     *container.TabItem // 日志标签页
+	MainTabs   *container.AppTabs // 主标签页容器
+	LogContent string             // 日志内容存储
 
 	// 运行状态
 	IsRunning bool

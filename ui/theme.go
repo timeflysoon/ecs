@@ -12,7 +12,8 @@ type CustomTheme struct{}
 var _ fyne.Theme = (*CustomTheme)(nil)
 
 func (m *CustomTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
-	return theme.DefaultTheme().Color(name, variant)
+	// 强制使用浅色主题
+	return theme.DefaultTheme().Color(name, theme.VariantLight)
 }
 
 func (m *CustomTheme) Icon(name fyne.ThemeIconName) fyne.Resource {

@@ -65,7 +65,7 @@ func (ui *TestUI) createOptionsPanel() fyne.CanvasObject {
 	ui.PingCheck = widget.NewCheck("三网PING值检测", nil)
 	ui.PingCheck.Checked = false
 
-	ui.LogCheck = widget.NewCheck("启用日志记录", nil)
+	ui.LogCheck = widget.NewCheck("启用日志记录", ui.onLogCheckChanged)
 	ui.LogCheck.Checked = false
 
 	// 全选/取消全选按钮

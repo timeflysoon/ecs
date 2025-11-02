@@ -2,10 +2,8 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -136,13 +134,6 @@ func (ui *TestUI) startTests() {
 	ui.ProgressBar.Show()
 	ui.StatusLabel.SetText("测试运行中...")
 
-	// 如果启用了日志，显示日志标签页
-	if ui.LogCheck != nil && ui.LogCheck.Checked {
-		ui.showLogTab()
-	} else {
-		ui.hideLogTab()
-	}
-
 	// 清空终端输出
 	if ui.Terminal != nil {
 		ui.Terminal.Clear()
@@ -204,119 +195,162 @@ func (ui *TestUI) exportResults() {
 	}, ui.Window)
 }
 
-// showLogTab 显示日志标签页
-func (ui *TestUI) showLogTab() {
-	// 如果日志标签页还不存在，创建它
-	if ui.LogTab == nil {
-		ui.LogTab = ui.createLogTab()
-		logTabItem := container.NewTabItem("日志查看", ui.LogTab)
-		ui.MainTabs.Append(logTabItem)
-	}
-
-	// 切换到日志标签页
-	ui.MainTabs.SelectIndex(2) // 0=配置, 1=结果, 2=日志
-}
-
-// hideLogTab 隐藏日志标签页
-func (ui *TestUI) hideLogTab() {
-	// 如果有日志标签页，移除它
-	if ui.LogTab != nil && len(ui.MainTabs.Items) > 2 {
-		ui.MainTabs.Remove(ui.MainTabs.Items[2])
-		ui.LogTab = nil
-		ui.LogViewer = nil
+// onLogCheckChanged 当日志复选框状态改变时调用
+func (ui *TestUI) onLogCheckChanged(checked bool) {
+	if checked {
+		// 勾选时添加日志标签页
+		ui.addLogTab()
+	} else {
+		// 取消勾选时移除日志标签页
+		ui.removeLogTab()
 	}
 }
 
-// createLogTab 创建日志查看标签页
-func (ui *TestUI) createLogTab() *fyne.Container {
+// addLogTab 添加日志标签页
+func (ui *TestUI) addLogTab() {
+	// 如果日志标签页已存在，不重复添加
+	if ui.LogTab != nil {
+		return
+	}
+
 	// 创建日志查看器
 	ui.LogViewer = widget.NewMultiLineEntry()
+	ui.LogViewer.SetPlaceHolder("日志内容将在测试运行时显示...")
 	ui.LogViewer.Wrapping = fyne.TextWrapWord
-	ui.LogViewer.SetText("日志文件内容将在这里显示...")
+	ui.LogViewer.Disable() // 只读
 
-	// 刷新按钮
-	refreshButton := widget.NewButton("刷新日志", ui.refreshLog)
-
-	// 清空按钮
-	clearLogButton := widget.NewButton("清空显示", func() {
-		if ui.LogViewer != nil {
-			ui.LogViewer.SetText("")
-		}
+	// 刷新日志按钮
+	refreshButton := widget.NewButton("刷新日志", func() {
+		ui.refreshLogFromFile()
 	})
 
-	topBar := container.NewHBox(
+	// 清空日志按钮
+	clearLogButton := widget.NewButton("清空日志", func() {
+		ui.LogContent = ""
+		ui.LogViewer.SetText("")
+	})
+
+	// 导出日志按钮
+	exportLogButton := widget.NewButton("导出日志", ui.exportLogContent)
+
+	// 按钮栏
+	buttonBar := container.NewHBox(
 		refreshButton,
 		clearLogButton,
+		exportLogButton,
 	)
 
+	// 日志内容区域
 	logScroll := container.NewScroll(ui.LogViewer)
 
-	return container.NewBorder(
-		topBar,    // Top: 操作按钮
+	// 组合布局
+	logContent := container.NewBorder(
+		buttonBar, // Top: 按钮栏
 		nil,       // Bottom
 		nil,       // Left
 		nil,       // Right
 		logScroll, // Center: 日志内容
 	)
+
+	// 创建并添加日志标签页
+	ui.LogTab = container.NewTabItem("日志", logContent)
+	ui.MainTabs.Append(ui.LogTab)
+
+	// 初始化日志内容
+	ui.LogContent = ""
 }
 
-// refreshLog 刷新日志内容
-func (ui *TestUI) refreshLog() {
+// removeLogTab 移除日志标签页
+func (ui *TestUI) removeLogTab() {
+	if ui.LogTab == nil {
+		return
+	}
+
+	// 从标签页容器中移除
+	ui.MainTabs.Remove(ui.LogTab)
+	ui.LogTab = nil
+	ui.LogViewer = nil
+	ui.LogContent = ""
+}
+
+// refreshLogContent 刷新日志内容
+func (ui *TestUI) refreshLogContent() {
 	if ui.LogViewer == nil {
 		return
 	}
 
-	// 获取当前目录
-	currentDir, err := os.Getwd()
+	// 显示存储的日志内容
+	if ui.LogContent != "" {
+		ui.LogViewer.SetText(ui.LogContent)
+	} else {
+		ui.LogViewer.SetText("暂无日志内容\n\n日志将在测试运行时自动更新。")
+	}
+}
+
+// refreshLogFromFile 从 ecs.log 文件读取日志内容
+func (ui *TestUI) refreshLogFromFile() {
+	if ui.LogViewer == nil {
+		return
+	}
+
+	// ecs.log 文件应该在当前工作目录下
+	logFilePath := "ecs.log"
+
+	// 尝试读取日志文件
+	content, err := os.ReadFile(logFilePath)
 	if err != nil {
-		ui.LogViewer.SetText("错误: 无法获取当前目录\n" + err.Error())
+		// 如果文件不存在或无法读取，显示错误信息
+		if os.IsNotExist(err) {
+			ui.LogViewer.SetText("日志文件 ecs.log 不存在\n\n可能测试未生成日志文件，或文件已被删除。")
+		} else {
+			ui.LogViewer.SetText(fmt.Sprintf("无法读取日志文件: %v", err))
+		}
 		return
 	}
 
-	// 查找所有 .log 文件
-	logFiles, err := filepath.Glob(filepath.Join(currentDir, "*.log"))
-	if err != nil {
-		ui.LogViewer.SetText("错误: 无法搜索日志文件\n" + err.Error())
+	// 更新日志内容
+	ui.LogContent = string(content)
+	ui.LogViewer.SetText(ui.LogContent)
+}
+
+// exportLogContent 导出日志内容
+func (ui *TestUI) exportLogContent() {
+	if ui.LogViewer == nil || ui.LogViewer.Text == "" {
+		dialog.ShowInformation("提示", "没有可导出的日志内容", ui.Window)
 		return
 	}
 
-	if len(logFiles) == 0 {
-		ui.LogViewer.SetText("当前目录下没有找到 .log 文件\n\n请确保已启用日志记录并运行测试。")
-		return
-	}
-
-	// 找到最新的日志文件
-	var latestLog string
-	var latestTime time.Time
-
-	for _, logFile := range logFiles {
-		info, err := os.Stat(logFile)
+	// 使用文件保存对话框
+	dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if err != nil {
-			continue
+			dialog.ShowError(err, ui.Window)
+			return
 		}
-		if latestLog == "" || info.ModTime().After(latestTime) {
-			latestLog = logFile
-			latestTime = info.ModTime()
+		if writer == nil {
+			return
 		}
-	}
+		defer writer.Close()
 
-	if latestLog == "" {
-		ui.LogViewer.SetText("没有找到有效的日志文件")
+		// 写入日志内容
+		_, err = writer.Write([]byte(ui.LogViewer.Text))
+		if err != nil {
+			dialog.ShowError(err, ui.Window)
+			return
+		}
+
+		dialog.ShowInformation("成功", "日志已成功导出", ui.Window)
+	}, ui.Window)
+}
+
+// AppendLog 向日志内容追加文本
+func (ui *TestUI) AppendLog(text string) {
+	if !ui.LogCheck.Checked || ui.LogViewer == nil {
 		return
 	}
 
-	// 读取日志文件内容
-	content, err := os.ReadFile(latestLog)
-	if err != nil {
-		ui.LogViewer.SetText("错误: 无法读取日志文件 " + latestLog + "\n" + err.Error())
-		return
-	}
+	ui.Mu.Lock()
+	defer ui.Mu.Unlock()
 
-	// 显示日志内容
-	logContent := "日志文件: " + filepath.Base(latestLog) + "\n"
-	logContent += "修改时间: " + latestTime.Format("2006-01-02 15:04:05") + "\n"
-	logContent += strings.Repeat("=", 60) + "\n\n"
-	logContent += string(content)
-
-	ui.LogViewer.SetText(logContent)
+	ui.LogContent += text
+	ui.LogViewer.SetText(ui.LogContent)
 }
