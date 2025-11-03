@@ -12,6 +12,10 @@ type CustomTheme struct{}
 var _ fyne.Theme = (*CustomTheme)(nil)
 
 func (m *CustomTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+	// 禁用状态的文字也使用深色显示（而不是默认的淡色）
+	if name == theme.ColorNameDisabled {
+		return theme.DefaultTheme().Color(theme.ColorNameForeground, theme.VariantLight)
+	}
 	// 强制使用浅色主题
 	return theme.DefaultTheme().Color(name, theme.VariantLight)
 }

@@ -27,7 +27,7 @@ func NewTerminalOutput() *TerminalOutput {
 	terminal.MultiLine = true
 	terminal.Wrapping = fyne.TextWrapOff // 禁用自动换行，支持水平滚动
 	terminal.TextStyle = fyne.TextStyle{Monospace: true}
-
+	terminal.Disable() // 禁用编辑
 	return terminal
 }
 
