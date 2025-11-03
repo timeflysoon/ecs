@@ -16,8 +16,11 @@ func (ui *TestUI) onPresetChanged(preset string) {
 	switch preset {
 	case "1. 融合怪完全体(能测全测)":
 		ui.setAllChecks(true)
-		// 注意：原goecs.go的完全体不包括ping测试，ping仅在选项6和10或中国模式下启用
+		// 注意：原goecs.go的完全体不包括三网ping测试，但包括TGDC和Web测试
 		ui.PingCheck.Checked = false
+		// 启用TGDC和主流网站PING测试（非中国模式下的默认行为）
+		ui.PingTgdcCheck.Checked = true
+		ui.PingWebCheck.Checked = true
 	case "2. 极简版(系统+CPU+内存+磁盘+5测速节点)":
 		ui.setAllChecks(false)
 		ui.BasicCheck.Checked = true

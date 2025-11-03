@@ -122,10 +122,18 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 				PrintCenteredTitle("System-Basic-Information", 82)
 			}
 		}
-		// TODO: 需要实现BasicsAndSecurityCheck函数
-		// _, _, basicInfo, securityInfo, _ = BasicsAndSecurityCheck(language, "ipv4", securityTestStatus)
-		basicInfo = "基础信息检测功能待实现\n"
-		securityInfo = "安全信息检测功能待实现\n"
+		// 根据网络连接状态选择检测类型
+		checkType := nt3Type
+		if preCheck.Connected && preCheck.StackType == "DualStack" {
+			_, _, basicInfo, securityInfo, _ = BasicsAndSecurityCheck(language, checkType, securityTestStatus)
+		} else if preCheck.Connected && preCheck.StackType == "IPv4" {
+			_, _, basicInfo, securityInfo, _ = BasicsAndSecurityCheck(language, "ipv4", securityTestStatus)
+		} else if preCheck.Connected && preCheck.StackType == "IPv6" {
+			_, _, basicInfo, securityInfo, _ = BasicsAndSecurityCheck(language, "ipv6", securityTestStatus)
+		} else {
+			_, _, basicInfo, securityInfo, _ = BasicsAndSecurityCheck(language, "", false)
+			securityTestStatus = false
+		}
 		if basicStatus {
 			fmt.Printf("%s", basicInfo)
 		}
