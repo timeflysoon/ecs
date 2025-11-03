@@ -130,6 +130,39 @@ jobs:
             exit 1
           fi
       
+      - name: Install UPX
+        run: |
+          wget -q https://github.com/upx/upx/releases/download/v4.2.1/upx-4.2.1-amd64_linux.tar.xz
+          tar -xf upx-4.2.1-amd64_linux.tar.xz
+          sudo mv upx-4.2.1-amd64_linux/upx /usr/local/bin/
+          upx --version
+      
+      - name: Compress APK with UPX
+        run: |
+          cd .build
+          for apk in *.apk; do
+            echo "压缩前大小: $(du -h "$apk")"
+            # 解压 APK
+            unzip -q "$apk" -d "${apk%.apk}_extracted"
+            
+            # 对 lib 目录下的 .so 文件使用 UPX 压缩
+            find "${apk%.apk}_extracted/lib" -name "*.so" -type f | while read so_file; do
+              echo "正在压缩: $so_file"
+              upx --best --lzma "$so_file" || echo "警告: $so_file 压缩失败，继续处理"
+            done
+            
+            # 重新打包 APK
+            cd "${apk%.apk}_extracted"
+            zip -r -q "../${apk%.apk}_compressed.apk" .
+            cd ..
+            
+            # 替换原 APK
+            mv "${apk%.apk}_compressed.apk" "$apk"
+            rm -rf "${apk%.apk}_extracted"
+            
+            echo "压缩后大小: $(du -h "$apk")"
+          done
+      
       - name: List build artifacts
         run: |
           ls -lh .build/
