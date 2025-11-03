@@ -4,11 +4,20 @@ go 1.25.3
 
 require (
 	fyne.io/fyne/v2 v2.7.0
-	github.com/oneclickvirt/CommonMediaTests v0.0.4-20250629044730
+	github.com/imroc/req/v3 v3.54.0
+	github.com/oneclickvirt/CommonMediaTests v0.0.4-20250329123841
+	github.com/oneclickvirt/UnlockTests v0.0.30-20251030112700
+	github.com/oneclickvirt/backtrace v0.0.8-20251102140847
 	github.com/oneclickvirt/basics v0.0.16-20251030093657
-	github.com/oneclickvirt/ecs v0.1.93
-	github.com/oneclickvirt/pingtest v0.0.8-20250728015259
+	github.com/oneclickvirt/cputest v0.0.12-20250720122317
+	github.com/oneclickvirt/defaultset v0.0.2-20240624082446
+	github.com/oneclickvirt/disktest v0.0.10-20250924030424
+	github.com/oneclickvirt/memorytest v0.0.10-20250924154648
+	github.com/oneclickvirt/nt3 v0.0.10-20251103023436
+	github.com/oneclickvirt/pingtest v0.0.9-20251102150730
 	github.com/oneclickvirt/portchecker v0.0.3-20250728015900
+	github.com/oneclickvirt/security v0.0.7-20251030094114
+	github.com/oneclickvirt/speedtest v0.0.11-20251102151740
 )
 
 require (
@@ -45,7 +54,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/huin/goupnp v1.2.0 // indirect
 	github.com/icholy/digest v1.1.0 // indirect
-	github.com/imroc/req/v3 v3.54.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jaypipes/ghw v0.17.0 // indirect
 	github.com/jaypipes/pcidb v1.0.1 // indirect
@@ -69,19 +77,10 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.5.1 // indirect
 	github.com/nxtrace/NTrace-core v1.4.3-rc.1 // indirect
-	github.com/oneclickvirt/UnlockTests v0.0.30-20251030112700 // indirect
-	github.com/oneclickvirt/backtrace v0.0.7-20250811023541 // indirect
-	github.com/oneclickvirt/cputest v0.0.12-20250720122317 // indirect
 	github.com/oneclickvirt/dd v0.0.2-20250808062818 // indirect
-	github.com/oneclickvirt/defaultset v0.0.2-20240624082446 // indirect
-	github.com/oneclickvirt/disktest v0.0.10-20250924030424 // indirect
 	github.com/oneclickvirt/fio v0.0.2-20250808045755 // indirect
 	github.com/oneclickvirt/gostun v0.0.5-20250727155022 // indirect
 	github.com/oneclickvirt/mbw v0.0.1-20250808061222 // indirect
-	github.com/oneclickvirt/memorytest v0.0.10-20250924154648 // indirect
-	github.com/oneclickvirt/nt3 v0.0.9-20251031045617 // indirect
-	github.com/oneclickvirt/security v0.0.7-20251030094114 // indirect
-	github.com/oneclickvirt/speedtest v0.0.10-20250728015734 // indirect
 	github.com/oneclickvirt/stream v0.0.2-20250924154001 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect

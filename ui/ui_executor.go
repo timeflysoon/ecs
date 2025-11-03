@@ -78,6 +78,10 @@ func (ui *TestUI) runTestsWithExecutor() {
 		fmt.Sscanf(ui.SpNumEntry.Text, "%d", &spNum)
 	}
 
+	// 获取PING测试配置
+	pingTgdc := ui.PingTgdcCheck.Checked
+	pingWeb := ui.PingWebCheck.Checked
+
 	// 更新进度
 	ui.ProgressBar.SetValue(0.1)
 	ui.StatusLabel.SetText("正在执行测试...")
@@ -85,7 +89,7 @@ func (ui *TestUI) runTestsWithExecutor() {
 	// 执行测试（输出会实时显示在terminal widget中）
 	err := executor.Execute(selectedOptions, language, testUpload, testDownload, chinaModeEnabled,
 		cpuMethod, threadMode, memoryMethod, diskMethod, diskPath, diskMulti,
-		nt3Location, nt3Type, spNum)
+		nt3Location, nt3Type, spNum, pingTgdc, pingWeb)
 
 	// 显示结束信息
 	endTime := time.Now()

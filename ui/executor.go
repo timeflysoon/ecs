@@ -12,19 +12,12 @@ import (
 
 	"github.com/oneclickvirt/CommonMediaTests/commediatests"
 	"github.com/oneclickvirt/basics/utils"
-	"github.com/oneclickvirt/ecs/cputest"
-	"github.com/oneclickvirt/ecs/disktest"
-	"github.com/oneclickvirt/ecs/memorytest"
-	"github.com/oneclickvirt/ecs/nexttrace"
-	"github.com/oneclickvirt/ecs/speedtest"
-	"github.com/oneclickvirt/ecs/unlocktest"
-	"github.com/oneclickvirt/ecs/upstreams"
-	ecsutils "github.com/oneclickvirt/ecs/utils"
+	"github.com/oneclickvirt/ecs-android/internal/tests"
 	"github.com/oneclickvirt/pingtest/pt"
 	"github.com/oneclickvirt/portchecker/email"
 )
 
-const ecsVersion = "v0.1.93"
+const ecsVersion = "v0.1.98"
 
 type CommandExecutor struct {
 	outputCallback func(string)
@@ -38,7 +31,7 @@ func NewCommandExecutor(outputCallback func(string)) *CommandExecutor {
 
 func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language string, testUpload bool, testDownload bool, chinaModeEnabled bool,
 	cpuMethod, threadMode, memoryMethod, diskMethod, diskPath string, diskMulti bool,
-	nt3Location, nt3Type string, spNum int) error {
+	nt3Location, nt3Type string, spNum int, pingTgdc, pingWeb bool) error {
 	// 设置测试选项
 	basicStatus := selectedOptions["basic"]
 	cpuTestStatus := selectedOptions["cpu"]
@@ -53,11 +46,15 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	speedTestStatus := selectedOptions["speed"]
 	pingTestStatus := selectedOptions["ping"]
 
-	// 中国模式逻辑：禁用流媒体测试，启用PING测试
+	// 中国模式逻辑：禁用流媒体测试，启用PING测试（只测三网PING）
+	// 对齐主仓库逻辑：中国模式下强制启用ping，但不测TGDC和Web
 	if chinaModeEnabled {
 		commTestStatus = false
 		utTestStatus = false
 		pingTestStatus = true
+		// 中国模式下强制禁用TGDC和Web测试
+		pingTgdc = false
+		pingWeb = false
 	}
 
 	// 检查网络连接
@@ -114,20 +111,21 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	}()
 
 	// 执行测试（参考原goecs.go的runChineseTests和runEnglishTests顺序）
-	// 1. 基础信息测试
+	// 1. 打印头部和基本信息
 	if basicStatus || securityTestStatus {
 		outputMutex.Lock()
-		ecsutils.PrintHead(language, 82, ecsVersion)
+		PrintHead(language, 82, ecsVersion)
 		if basicStatus {
 			if language == "zh" {
-				ecsutils.PrintCenteredTitle("系统基础信息", 82)
+				PrintCenteredTitle("系统基础信息", 82)
 			} else {
-				ecsutils.PrintCenteredTitle("System-Basic-Information", 82)
+				PrintCenteredTitle("System-Basic-Information", 82)
 			}
 		}
-		if preCheck.Connected {
-			_, _, basicInfo, securityInfo, _ = ecsutils.BasicsAndSecurityCheck(language, "ipv4", securityTestStatus)
-		}
+		// TODO: 需要实现BasicsAndSecurityCheck函数
+		// _, _, basicInfo, securityInfo, _ = BasicsAndSecurityCheck(language, "ipv4", securityTestStatus)
+		basicInfo = "基础信息检测功能待实现\n"
+		securityInfo = "安全信息检测功能待实现\n"
 		if basicStatus {
 			fmt.Printf("%s", basicInfo)
 		}
@@ -137,11 +135,11 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	// 2. CPU测试
 	if cpuTestStatus {
 		outputMutex.Lock()
-		realTestMethod, res := cputest.CpuTest(language, cpuMethod, threadMode)
+		realTestMethod, res := tests.CpuTest(language, cpuMethod, threadMode)
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle(fmt.Sprintf("CPU测试-通过%s测试", realTestMethod), 82)
+			PrintCenteredTitle(fmt.Sprintf("CPU测试-通过%s测试", realTestMethod), 82)
 		} else {
-			ecsutils.PrintCenteredTitle(fmt.Sprintf("CPU-Test--%s-Method", realTestMethod), 82)
+			PrintCenteredTitle(fmt.Sprintf("CPU-Test--%s-Method", realTestMethod), 82)
 		}
 		fmt.Print(res)
 		outputMutex.Unlock()
@@ -150,11 +148,11 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	// 3. 内存测试
 	if memoryTestStatus {
 		outputMutex.Lock()
-		realTestMethod, res := memorytest.MemoryTest(language, memoryMethod)
+		realTestMethod, res := tests.MemoryTest(language, memoryMethod)
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle(fmt.Sprintf("内存测试-通过%s测试", realTestMethod), 82)
+			PrintCenteredTitle(fmt.Sprintf("内存测试-通过%s测试", realTestMethod), 82)
 		} else {
-			ecsutils.PrintCenteredTitle(fmt.Sprintf("Memory-Test--%s-Method", realTestMethod), 82)
+			PrintCenteredTitle(fmt.Sprintf("Memory-Test--%s-Method", realTestMethod), 82)
 		}
 		fmt.Print(res)
 		outputMutex.Unlock()
@@ -163,11 +161,11 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	// 4. 磁盘测试
 	if diskTestStatus {
 		outputMutex.Lock()
-		realTestMethod, res := disktest.DiskTest(language, diskMethod, diskPath, diskMulti, true)
+		realTestMethod, res := tests.DiskTest(language, diskMethod, diskPath, diskMulti, true)
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle(fmt.Sprintf("硬盘测试-通过%s测试", realTestMethod), 82)
+			PrintCenteredTitle(fmt.Sprintf("硬盘测试-通过%s测试", realTestMethod), 82)
 		} else {
-			ecsutils.PrintCenteredTitle(fmt.Sprintf("Disk-Test--%s-Method", realTestMethod), 82)
+			PrintCenteredTitle(fmt.Sprintf("Disk-Test--%s-Method", realTestMethod), 82)
 		}
 		fmt.Print(res)
 		outputMutex.Unlock()
@@ -178,7 +176,53 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		wg1.Add(1)
 		go func() {
 			defer wg1.Done()
-			mediaInfo = unlocktest.MediaTest(language)
+			mediaInfo = tests.MediaTest(language)
+		}()
+	} // 2. CPU测试
+	if cpuTestStatus {
+		outputMutex.Lock()
+		realTestMethod, res := tests.CpuTest(language, cpuMethod, threadMode)
+		if language == "zh" {
+			PrintCenteredTitle(fmt.Sprintf("CPU测试-通过%s测试", realTestMethod), 82)
+		} else {
+			PrintCenteredTitle(fmt.Sprintf("CPU-Test--%s-Method", realTestMethod), 82)
+		}
+		fmt.Print(res)
+		outputMutex.Unlock()
+	}
+
+	// 3. 内存测试
+	if memoryTestStatus {
+		outputMutex.Lock()
+		realTestMethod, res := tests.MemoryTest(language, memoryMethod)
+		if language == "zh" {
+			PrintCenteredTitle(fmt.Sprintf("内存测试-通过%s测试", realTestMethod), 82)
+		} else {
+			PrintCenteredTitle(fmt.Sprintf("Memory-Test--%s-Method", realTestMethod), 82)
+		}
+		fmt.Print(res)
+		outputMutex.Unlock()
+	}
+
+	// 4. 磁盘测试
+	if diskTestStatus {
+		outputMutex.Lock()
+		realTestMethod, res := tests.DiskTest(language, diskMethod, diskPath, diskMulti, true)
+		if language == "zh" {
+			PrintCenteredTitle(fmt.Sprintf("硬盘测试-通过%s测试", realTestMethod), 82)
+		} else {
+			PrintCenteredTitle(fmt.Sprintf("Disk-Test--%s-Method", realTestMethod), 82)
+		}
+		fmt.Print(res)
+		outputMutex.Unlock()
+	}
+
+	// 5. 启动异步测试（流媒体解锁和邮件端口）
+	if utTestStatus && preCheck.Connected {
+		wg1.Add(1)
+		go func() {
+			defer wg1.Done()
+			mediaInfo = tests.MediaTest(language)
 		}()
 	}
 
@@ -193,7 +237,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	// 6. 御三家流媒体测试（仅中文）
 	if commTestStatus && preCheck.Connected && language == "zh" {
 		outputMutex.Lock()
-		ecsutils.PrintCenteredTitle("御三家流媒体测试", 82)
+		PrintCenteredTitle("御三家流媒体测试", 82)
 		commInfo := commediatests.MediaTests(language)
 		fmt.Print(commInfo)
 		outputMutex.Unlock()
@@ -204,9 +248,9 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		wg1.Wait()
 		outputMutex.Lock()
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle("跨国流媒体解锁", 82)
+			PrintCenteredTitle("跨国流媒体解锁", 82)
 		} else {
-			ecsutils.PrintCenteredTitle("Cross-Border-Streaming-Media-Unlock", 82)
+			PrintCenteredTitle("Cross-Border-Streaming-Media-Unlock", 82)
 		}
 		fmt.Printf("%s", mediaInfo)
 		outputMutex.Unlock()
@@ -216,9 +260,9 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	if securityTestStatus && preCheck.Connected {
 		outputMutex.Lock()
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle("IP质量检测", 82)
+			PrintCenteredTitle("IP质量检测", 82)
 		} else {
-			ecsutils.PrintCenteredTitle("IP-Quality-Check", 82)
+			PrintCenteredTitle("IP-Quality-Check", 82)
 		}
 		fmt.Printf("%s", securityInfo)
 		outputMutex.Unlock()
@@ -229,9 +273,9 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		wg2.Wait()
 		outputMutex.Lock()
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle("邮件端口检测", 82)
+			PrintCenteredTitle("邮件端口检测", 82)
 		} else {
-			ecsutils.PrintCenteredTitle("Email-Port-Check", 82)
+			PrintCenteredTitle("Email-Port-Check", 82)
 		}
 		fmt.Println(emailInfo)
 		outputMutex.Unlock()
@@ -241,11 +285,11 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	if backtraceStatus && preCheck.Connected {
 		outputMutex.Lock()
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle("上游及回程线路检测", 82)
+			PrintCenteredTitle("上游及回程线路检测", 82)
 		} else {
-			ecsutils.PrintCenteredTitle("Upstreams-Backtrace-Check", 82)
+			PrintCenteredTitle("Upstreams-Backtrace-Check", 82)
 		}
-		upstreams.UpstreamsCheck()
+		tests.UpstreamsCheck()
 		outputMutex.Unlock()
 	}
 
@@ -253,44 +297,88 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	if nt3Status && preCheck.Connected {
 		outputMutex.Lock()
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle("三网回程路由检测", 82)
+			PrintCenteredTitle("三网回程路由检测", 82)
 		} else {
-			ecsutils.PrintCenteredTitle("NextTrace-3Networks-Check", 82)
+			PrintCenteredTitle("NextTrace-3Networks-Check", 82)
 		}
-		nexttrace.NextTrace3Check(language, nt3Location, nt3Type)
+		tests.NextTrace3Check(language, nt3Location, nt3Type)
 		outputMutex.Unlock()
 	}
 
 	// 12. PING值测试
+	// 对齐主仓库逻辑：
+	// - 中国模式(chinaModeEnabled)下：只测三网PING，不测TGDC和Web
+	// - 非中国模式且pingTestStatus=true：根据用户配置决定
+	// - 单独的pingTgdc/pingWeb可以在没有pingTestStatus的情况下也显示
 	if pingTestStatus && preCheck.Connected {
 		outputMutex.Lock()
-		if language == "zh" {
-			ecsutils.PrintCenteredTitle("三网PING值检测", 82)
+
+		// 判断是否为中国模式
+		if chinaModeEnabled {
+			// 中国模式：只测三网PING
+			if language == "zh" {
+				PrintCenteredTitle("PING值检测", 82)
+			} else {
+				PrintCenteredTitle("PING-Test", 82)
+			}
+			pingResult := pt.PingTest()
+			fmt.Println(pingResult)
 		} else {
-			ecsutils.PrintCenteredTitle("Three-Network-PING-Test", 82)
+			// 非中国模式：根据配置测试
+			if language == "zh" {
+				PrintCenteredTitle("PING值检测", 82)
+			} else {
+				PrintCenteredTitle("PING-Test", 82)
+			}
+			pingResult := pt.PingTest()
+			fmt.Println(pingResult)
+
+			// 根据用户配置决定是否测试TGDC和Web
+			if pingTgdc {
+				fmt.Println(pt.TelegramDCTest())
+			}
+			if pingWeb {
+				fmt.Println(pt.WebsiteTest())
+			}
 		}
-		pingResult := pt.PingTest()
-		fmt.Print(pingResult)
+
 		outputMutex.Unlock()
 	}
 
-	// 13. 速度测试
+	// 单独的TGDC和Web测试（当pingTestStatus=false但用户单独启用时）
+	if !pingTestStatus && preCheck.Connected && (pingTgdc || pingWeb) {
+		outputMutex.Lock()
+		if language == "zh" {
+			PrintCenteredTitle("PING值检测", 82)
+		} else {
+			PrintCenteredTitle("PING-Test", 82)
+		}
+
+		if pingTgdc {
+			fmt.Println(pt.TelegramDCTest())
+		}
+		if pingWeb {
+			fmt.Println(pt.WebsiteTest())
+		}
+
+		outputMutex.Unlock()
+	} // 13. 速度测试
 	if speedTestStatus && preCheck.Connected {
 		outputMutex.Lock()
 		if language == "zh" {
-			ecsutils.PrintCenteredTitle("就近节点测速", 82)
+			PrintCenteredTitle("就近节点测速", 82)
 		} else {
-			ecsutils.PrintCenteredTitle("Speed-Test", 82)
+			PrintCenteredTitle("Speed-Test", 82)
 		}
-		speedtest.ShowHead(language)
+		tests.ShowHead(language)
 
 		// 根据上传/下载配置进行测试
 		if testUpload || testDownload {
-			speedtest.NearbySP()
+			tests.NearbySP()
 			if language == "zh" {
-				speedtest.CustomSP("net", "global", spNum, language)
+				tests.CustomSP("net", "global", spNum, language)
 			} else {
-				speedtest.CustomSP("net", "global", -1, language)
+				tests.CustomSP("net", "global", -1, language)
 			}
 		}
 		outputMutex.Unlock()
@@ -303,7 +391,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 	minutes := int(duration.Minutes())
 	seconds := int(duration.Seconds()) % 60
 	currentTime := time.Now().Format("Mon Jan 2 15:04:05 MST 2006")
-	ecsutils.PrintCenteredTitle("", 82)
+	PrintCenteredTitle("", 82)
 	if language == "zh" {
 		fmt.Printf("花费          : %d 分 %d 秒\n", minutes, seconds)
 		fmt.Printf("时间          : %s\n", currentTime)
@@ -311,7 +399,7 @@ func (e *CommandExecutor) Execute(selectedOptions map[string]bool, language stri
 		fmt.Printf("Cost    Time          : %d min %d sec\n", minutes, seconds)
 		fmt.Printf("Current Time          : %s\n", currentTime)
 	}
-	ecsutils.PrintCenteredTitle("", 82)
+	PrintCenteredTitle("", 82)
 	outputMutex.Unlock()
 
 	// 清理

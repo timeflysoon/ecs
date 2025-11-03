@@ -197,6 +197,13 @@ func (ui *TestUI) createConfigSection() fyne.CanvasObject {
 	ui.ChinaModeCheck = widget.NewCheck("启用中国专项测试", nil)
 	ui.ChinaModeCheck.Checked = false
 
+	// PING测试配置
+	ui.PingTgdcCheck = widget.NewCheck("测试Telegram DC", nil)
+	ui.PingTgdcCheck.Checked = false
+
+	ui.PingWebCheck = widget.NewCheck("测试流行网站", nil)
+	ui.PingWebCheck.Checked = false
+
 	// 使用表单布局更紧凑
 	configForm := container.NewVBox(
 		widget.NewLabel("通用配置:"),
@@ -248,7 +255,11 @@ func (ui *TestUI) createConfigSection() fyne.CanvasObject {
 		),
 		ui.SpTestUploadCheck,
 		ui.SpTestDownloadCheck,
-		// PING测试配置已隐藏 - pingtest包目前没有额外可配置参数
+		widget.NewSeparator(),
+		widget.NewLabel("PING测试配置:"),
+		widget.NewLabel("(PingCheck控制三网PING，以下单独控制)"),
+		ui.PingTgdcCheck,
+		ui.PingWebCheck,
 	)
 
 	return widget.NewCard("详细配置", "调整测试参数", configForm)

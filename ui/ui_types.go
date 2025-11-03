@@ -48,7 +48,11 @@ type TestUI struct {
 	SpTestDownloadCheck *widget.Check // 测试下载速度
 	// 中国模式
 	ChinaModeCheck *widget.Check // 启用中国专项测试
-	// PING测试配置（预留，pingtest包目前没有额外参数）
+
+	// PING测试配置
+	// 注：PingCheck控制三网PING测试，以下两个单独控制TGDC和Web测试
+	PingTgdcCheck *widget.Check // 是否测试TGDC
+	PingWebCheck  *widget.Check // 是否测试流行网站
 
 	// 控制按钮
 	StartButton *widget.Button
