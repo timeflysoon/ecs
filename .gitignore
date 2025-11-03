@@ -2,8 +2,9 @@
 *.apk
 *.aab
 
-# Build directory (prevent large files from being committed)
-.build/
+# Build artifacts
+goecs-*
+!goecs-desktop
 
 # Vendor
 vendor/

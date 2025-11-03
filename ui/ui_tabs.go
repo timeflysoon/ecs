@@ -257,7 +257,7 @@ func (ui *TestUI) createConfigSection() fyne.CanvasObject {
 		ui.SpTestDownloadCheck,
 		widget.NewSeparator(),
 		widget.NewLabel("PING测试配置:"),
-		widget.NewLabel("(PingCheck控制三网PING，以下单独控制)"),
+		widget.NewLabel("(三网PING值测试不包含以下内容，勾选才测试)"),
 		ui.PingTgdcCheck,
 		ui.PingWebCheck,
 	)

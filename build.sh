@@ -55,13 +55,11 @@ build_macos() {
     echo "  版本: $VERSION"
     echo "=========================================="
     
-    mkdir -p .build
-    
     echo ""
     echo "构建 macOS ARM64 版本..."
     fyne package -os darwin/arm64 -name goecs
     if [ -f goecs.app ] || [ -d goecs.app ]; then
-        tar -czf .build/goecs-macos-arm64-${VERSION}.tar.gz goecs.app
+        tar -czf goecs-macos-arm64-${VERSION}.tar.gz goecs.app
         rm -rf goecs.app
         echo "✓ macOS ARM64 构建成功"
     else
@@ -73,7 +71,7 @@ build_macos() {
     echo "构建 macOS AMD64 版本..."
     fyne package -os darwin/amd64 -name goecs
     if [ -f goecs.app ] || [ -d goecs.app ]; then
-        tar -czf .build/goecs-macos-amd64-${VERSION}.tar.gz goecs.app
+        tar -czf goecs-macos-amd64-${VERSION}.tar.gz goecs.app
         rm -rf goecs.app
         echo "✓ macOS AMD64 构建成功"
     else
@@ -90,13 +88,11 @@ build_windows() {
     echo "  版本: $VERSION"
     echo "=========================================="
     
-    mkdir -p .build
-    
     echo ""
     echo "构建 Windows ARM64 版本..."
     fyne package -os windows/arm64 -name goecs
     if [ -f goecs.exe ]; then
-        mv goecs.exe .build/goecs-windows-arm64-${VERSION}.exe
+        mv goecs.exe goecs-windows-arm64-${VERSION}.exe
         echo "✓ Windows ARM64 构建成功"
     else
         echo "✗ Windows ARM64 构建失败"
@@ -107,7 +103,7 @@ build_windows() {
     echo "构建 Windows AMD64 版本..."
     fyne package -os windows/amd64 -name goecs
     if [ -f goecs.exe ]; then
-        mv goecs.exe .build/goecs-windows-amd64-${VERSION}.exe
+        mv goecs.exe goecs-windows-amd64-${VERSION}.exe
         echo "✓ Windows AMD64 构建成功"
     else
         echo "✗ Windows AMD64 构建失败"
@@ -123,13 +119,11 @@ build_linux() {
     echo "  版本: $VERSION"
     echo "=========================================="
     
-    mkdir -p .build
-    
     echo ""
     echo "构建 Linux ARM64 版本..."
     fyne package -os linux/arm64 -name goecs
     if [ -f goecs.tar.xz ]; then
-        mv goecs.tar.xz .build/goecs-linux-arm64-${VERSION}.tar.xz
+        mv goecs.tar.xz goecs-linux-arm64-${VERSION}.tar.xz
         echo "✓ Linux ARM64 构建成功"
     else
         echo "✗ Linux ARM64 构建失败"
@@ -140,7 +134,7 @@ build_linux() {
     echo "构建 Linux AMD64 版本..."
     fyne package -os linux/amd64 -name goecs
     if [ -f goecs.tar.xz ]; then
-        mv goecs.tar.xz .build/goecs-linux-amd64-${VERSION}.tar.xz
+        mv goecs.tar.xz goecs-linux-amd64-${VERSION}.tar.xz
         echo "✓ Linux AMD64 构建成功"
     else
         echo "✗ Linux AMD64 构建失败"
@@ -164,8 +158,6 @@ build_android() {
     
     echo "Android NDK: $ANDROID_NDK_HOME"
     
-    mkdir -p .build
-    
     echo ""
     echo "构建 Android APK..."
     
@@ -173,7 +165,7 @@ build_android() {
     fyne package -os android -appID com.oneclickvirt.goecs -appVersion "$VERSION"
     
     if [ -f *.apk ]; then
-        mv *.apk .build/goecs-android-${VERSION}.apk
+        mv *.apk goecs-android-${VERSION}.apk
         echo "✓ Android APK 构建成功"
     else
         echo "✗ Android APK 构建失败"
@@ -232,11 +224,6 @@ echo ""
 echo "=========================================="
 echo "  所有构建任务完成"
 echo "=========================================="
-if [ -d .build ]; then
-    echo ""
-    echo "构建产物:"
-    ls -lh .build/
-    echo ""
-    echo "总大小:"
-    du -sh .build/
-fi
+echo ""
+echo "构建产物:"
+ls -lh goecs-* 2>/dev/null || echo "无构建产物"

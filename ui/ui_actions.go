@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -293,7 +294,12 @@ func (ui *TestUI) exportResults() {
 		return
 	}
 
-	dialog.ShowFileSave(func(writer fyne.URIWriteCloser, err error) {
+	// 直接导出为文本文件
+	// 设置默认文件名
+	defaultFilename := "goecs.txt"
+
+	// 创建保存对话框，设置默认文件名
+	saveDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
 		if err != nil {
 			dialog.ShowError(err, ui.Window)
 			return
@@ -311,6 +317,19 @@ func (ui *TestUI) exportResults() {
 
 		dialog.ShowInformation("成功", "结果已导出到: "+writer.URI().Path(), ui.Window)
 	}, ui.Window)
+
+	// 设置默认文件名
+	saveDialog.SetFileName(defaultFilename)
+
+	// 尝试设置默认位置到用户主目录
+	homeDir, _ := os.UserHomeDir()
+	if homeDir != "" {
+		if lister, err := storage.ListerForURI(storage.NewFileURI(homeDir)); err == nil {
+			saveDialog.SetLocation(lister)
+		}
+	}
+
+	saveDialog.Show()
 }
 
 // onLogCheckChanged 当日志复选框状态改变时调用

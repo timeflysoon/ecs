@@ -2,104 +2,99 @@
 
 [![Build All UI APP](https://github.com/oneclickvirt/ecs/actions/workflows/build.yml/badge.svg)](https://github.com/oneclickvirt/ecs/actions/workflows/build.yml)
 
-A cross-platform testing tool based on the Fyne framework, supporting Android, macOS, and Windows.
+基于 Fyne 框架的跨平台系统测试工具，支持 Android、macOS、Windows 和 Linux 平台。
 
-## Supported Platforms
+## 支持平台
 
 ### Android
-- Android 7.0 (API Level 24) or higher
-- Android 13 (API Level 33) recommended for best experience
-- Supported architectures: ARM64, x86_64
+- 最低版本: Android 7.0 (API Level 24)
+- 推荐版本: Android 13 (API Level 33) 或更高
+- 支持架构: ARM64, x86_64
 
 ### macOS
-- macOS 11.0 or higher
-- Supported architectures: Apple Silicon (ARM64), Intel (AMD64)
+- 最低版本: macOS 11.0
+- 支持架构: Apple Silicon (ARM64), Intel (AMD64)
 
 ### Windows
-- Windows 10 or higher
-- Supported architectures: ARM64, AMD64
+- 最低版本: Windows 10
+- 支持架构: ARM64, AMD64
 
-## Local Build
+### Linux
+- 支持架构: ARM64, AMD64
 
-### Prerequisites
+## 本地构建
 
-1. Go 1.25.3
-2. Android SDK
-3. Android NDK 25.2.9519653
-4. JDK 17+
+### 环境要求
 
-### Environment Setup
+1. Go 1.25.3 或更高版本
+2. Android SDK (仅用于构建 Android 版本)
+3. Android NDK 25.2.9519653 (仅用于构建 Android 版本)
+4. JDK 17 或更高版本 (仅用于构建 Android 版本)
+
+### 环境配置
 
 ```bash
-# Set Android NDK path
+# 设置 Android NDK 路径 (仅用于构建 Android 版本)
 export ANDROID_NDK_HOME=/path/to/android-ndk
 
-# Install Fyne CLI
+# 安装 Fyne CLI
 go install fyne.io/fyne/v2/cmd/fyne@latest
 ```
 
-### Build Commands
+### 构建命令
 
 ```bash
-# Preparation before Android build: ECS binary files need to be prepared first
-# Compile Linux binaries from the ECS project and place them in the jniLibs directory
-# See jniLibs/README.md for details
-
-# Quick preparation command (assuming ecs project is in ../ecs)
-cd ../ecs && \
-CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -checklinkname=0" -o goecs-linux-arm64 ./ && \
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -checklinkname=0" -o goecs-linux-amd64 ./ && \
-cd ../goecs && \
-cp ../ecs/goecs-linux-arm64 jniLibs/arm64-v8a/libgoecs.so && \
-cp ../ecs/goecs-linux-amd64 jniLibs/x86_64/libgoecs.so && \
-chmod 755 jniLibs/*/libgoecs.so
-
-# Build desktop version (for quick testing)
+# 构建桌面版本 (用于快速测试)
 ./build.sh desktop
 
-# Build Android APK (arm64 + x86_64)
+# 构建 Android APK
 ./build.sh android
 
-# Build macOS application (arm64 + amd64)
+# 构建 macOS 应用程序
 ./build.sh macos
 
-# Build Windows application (arm64 + amd64)
+# 构建 Windows 应用程序
 ./build.sh windows
 
-# Build all platforms
+# 构建 Linux 应用程序
+./build.sh linux
+
+# 构建所有平台
 ./build.sh all
 ```
 
-Build artifacts will be output to the `.build/` directory.
+构建产物将直接输出到当前目录。
 
-### Build Artifacts Description
+### 构建产物说明
 
-- **Android**: `.apk` files
-  - `goecs-android-arm64-*.apk` - ARM64 version (physical device)
-  - `goecs-android-x86_64-*.apk` - x86_64 version (emulator)
+- Android: APK 安装包
+  - `goecs-android-*.apk` - 多架构版本
 
-- **macOS**: `.tar.gz` archives (containing `.app` application)
-  - `goecs-macos-arm64-*.tar.gz` - Apple Silicon version
-  - `goecs-macos-amd64-*.tar.gz` - Intel version
+- macOS: TAR.GZ 压缩包 (包含 .app 应用程序)
+  - `goecs-macos-arm64-*.tar.gz` - Apple Silicon 版本
+  - `goecs-macos-amd64-*.tar.gz` - Intel 版本
 
-- **Windows**: `.exe` executable files
-  - `goecs-windows-arm64-*.exe` - ARM64 version
-  - `goecs-windows-amd64-*.exe` - AMD64 version
+- Windows: EXE 可执行文件
+  - `goecs-windows-arm64-*.exe` - ARM64 版本
+  - `goecs-windows-amd64-*.exe` - AMD64 版本
 
-## Development
+- Linux: TAR.XZ 压缩包
+  - `goecs-linux-arm64-*.tar.xz` - ARM64 版本
+  - `goecs-linux-amd64-*.tar.xz` - AMD64 版本
+
+## 开发调试
 
 ```bash
-# Clone repository
+# 克隆仓库
 git clone https://github.com/oneclickvirt/ecs.git
 cd ecs
 
-# Switch to Android development branch
-git checkout android-app
+# 切换到 GUI 分支
+git checkout gui
 
-# Install dependencies
+# 下载依赖
 go mod download
 
-# Run desktop version (for development testing)
+# 运行桌面版本 (用于开发测试)
 go run -ldflags="-checklinkname=0" .
 ```
-
