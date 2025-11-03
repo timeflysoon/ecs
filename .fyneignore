@@ -1,0 +1,28 @@
+# 排除 vendor 中的二进制文件
+vendor/github.com/oneclickvirt/fio/bin/
+vendor/github.com/oneclickvirt/dd/bin/
+vendor/github.com/oneclickvirt/stream/bin/
+vendor/github.com/oneclickvirt/mbw/bin/
+
+# 排除不需要的平台文件
+**/*-darwin-*
+**/*-windows-*
+**/*-linux-386
+**/*-linux-mips*
+**/*-linux-ppc64*
+**/*-linux-s390x
+**/*-freebsd-*
+
+# 排除测试文件
+**/*_test.go
+**/testdata/
+
+# 排除文档
+**/README.md
+**/LICENSE
+**/CHANGELOG.md
+**/*.md
+
+# 排除源码示例
+**/examples/
+**/samples/

@@ -97,16 +97,39 @@ jobs:
           sed -i "s/Version = .*/Version = \"${{ needs.prepare.outputs.version }}\"/" FyneApp.toml
           cat FyneApp.toml
       
+      - name: Clean vendor binaries for Android
+        run: |
+          echo "Cleaning unnecessary vendor binaries..."
+          # 删除不需要的平台二进制文件
+          find vendor -type f \( \
+            -name "*-darwin-*" -o \
+            -name "*-windows-*" -o \
+            -name "*-freebsd-*" -o \
+            -name "*-linux-386" -o \
+            -name "*-linux-mips*" -o \
+            -name "*-linux-ppc64*" -o \
+            -name "*-linux-s390x" -o \
+            -name "*.exe" \
+          \) -delete
+          
+          # 只保留 arm64 和 amd64 的二进制文件
+          echo "Vendor size after cleanup:"
+          du -sh vendor/
+
+      
       - name: Build Android APK (arm64)
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
           GOPRIVATE: github.com/oneclickvirt/security
         run: |
-          fyne package --os android --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}"
+          fyne package --os android --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}" \
+            --ldflags "-s -w -checklinkname=0" \
+            --release
           if [ -f *.apk ]; then
             mkdir -p .build
             mv *.apk .build/goecs-gui-android-arm64-${{ needs.prepare.outputs.version }}.apk
             echo "ARM64 APK 构建成功"
+            ls -lh .build/goecs-gui-android-arm64-${{ needs.prepare.outputs.version }}.apk
           else
             echo "ARM64 APK 构建失败"
             exit 1
@@ -117,10 +140,13 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
           GOPRIVATE: github.com/oneclickvirt/security
         run: |
-          fyne package --os android/amd64 --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}"
+          fyne package --os android/amd64 --app-id com.oneclickvirt.goecs --app-version "${{ needs.prepare.outputs.app_version }}" \
+            --ldflags "-s -w -checklinkname=0" \
+            --release
           if [ -f *.apk ]; then
             mv *.apk .build/goecs-gui-android-x86_64-${{ needs.prepare.outputs.version }}.apk
             echo "x86_64 APK 构建成功"
+            ls -lh .build/goecs-gui-android-x86_64-${{ needs.prepare.outputs.version }}.apk
           else
             echo "x86_64 APK 构建失败"
             exit 1
