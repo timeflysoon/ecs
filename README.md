@@ -1,8 +1,8 @@
-# GoECS - 跨平台测试工具
+# 融合怪GUI版本
 
 [![Build All UI APP](https://github.com/oneclickvirt/ecs/actions/workflows/build-all.yml/badge.svg)](https://github.com/oneclickvirt/ecs/actions/workflows/build-all.yml)
 
-一个基于 Fyne 框架的跨平台测试工具，支持 Android、macOS、Windows 和 Linux。
+一个基于 Fyne 框架的跨平台测试工具，支持 Android、macOS、Windows。
 
 ## 支持的平台
 
@@ -17,10 +17,6 @@
 
 ### Windows
 - Windows 10 或更高版本
-- 支持架构：ARM64、AMD64
-
-### Linux
-- 主流 Linux 发行版
 - 支持架构：ARM64、AMD64
 
 ## 本地构建
@@ -70,9 +66,6 @@ chmod 755 jniLibs/*/libgoecs.so
 # 构建 Windows 应用 (arm64 + amd64)
 ./build.sh windows
 
-# 构建 Linux 应用 (arm64 + amd64)
-./build.sh linux
-
 # 构建所有平台
 ./build.sh all
 ```
@@ -92,10 +85,6 @@ chmod 755 jniLibs/*/libgoecs.so
 - **Windows**: `.exe` 可执行文件
   - `goecs-windows-arm64-*.exe` - ARM64 版本
   - `goecs-windows-amd64-*.exe` - AMD64 版本
-
-- **Linux**: `.tar.gz` 压缩包（包含可执行文件）
-  - `goecs-linux-arm64-*.tar.gz` - ARM64 版本
-  - `goecs-linux-amd64-*.tar.gz` - AMD64 版本
 
 ## 开发
 
