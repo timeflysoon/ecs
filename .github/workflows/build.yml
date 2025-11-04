@@ -205,7 +205,7 @@ jobs:
               # 签名 APK
               $APKSIGNER sign \
                 --ks oneclickvirt.jks \
-                --ks-key-alias OneClickVirt \
+                --ks-key-alias gui \
                 --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
                 --key-pass pass:${{ secrets.KEY_PASSWORD }} \
                 --out "$SIGNED_APK" \
