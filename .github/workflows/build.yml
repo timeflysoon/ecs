@@ -165,6 +165,69 @@ jobs:
             fi
           done
       
+      - name: Download signing keystore
+        run: |
+          # 使用 GitHub Token 下载私有仓库的 JKS 文件
+          curl -L \
+            -H "Authorization: token ${{ secrets.GHT }}" \
+            -H "Accept: application/vnd.github.v3.raw" \
+            -o oneclickvirt.jks \
+            "https://api.github.com/repos/oneclickvirt/jks/contents/oneclickvirt.jks"
+          
+          # 验证文件是否下载成功
+          if [ -f oneclickvirt.jks ]; then
+            echo "✓ JKS 文件下载成功"
+            ls -lh oneclickvirt.jks
+          else
+            echo "✗ JKS 文件下载失败"
+            exit 1
+          fi
+      
+      - name: Sign APK files
+        run: |
+          # 安装 apksigner (包含在 Android build-tools 中)
+          BUILD_TOOLS_VERSION="33.0.2"
+          APKSIGNER="$ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+          
+          if [ ! -f "$APKSIGNER" ]; then
+            echo "✗ apksigner 未找到"
+            exit 1
+          fi
+          
+          echo "使用 apksigner: $APKSIGNER"
+          
+          # 对所有 APK 文件进行签名
+          for apk in goecs-gui-android-*.apk; do
+            if [ -f "$apk" ]; then
+              echo "正在签名: $apk"
+              SIGNED_APK="${apk%.apk}_signed.apk"
+              
+              # 签名 APK
+              $APKSIGNER sign \
+                --ks oneclickvirt.jks \
+                --ks-key-alias OneClickVirt \
+                --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
+                --key-pass pass:${{ secrets.KEY_PASSWORD }} \
+                --out "$SIGNED_APK" \
+                "$apk"
+              
+              # 验证签名
+              $APKSIGNER verify "$SIGNED_APK"
+              
+              if [ $? -eq 0 ]; then
+                echo "✓ $apk 签名成功"
+                # 替换原始 APK
+                mv "$SIGNED_APK" "$apk"
+              else
+                echo "✗ $apk 签名验证失败"
+                exit 1
+              fi
+            fi
+          done
+          
+          # 清理 JKS 文件
+          rm -f oneclickvirt.jks
+      
       - name: List build artifacts
         run: |
           ls -lh goecs-gui-android-*.apk
