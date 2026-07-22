@@ -1,6 +1,6 @@
 {
   "schema": "goecs-data/v1",
-  "generated_at": "2026-07-21T06:08:26.065865682Z",
+  "generated_at": "2026-07-22T06:07:08.155559982Z",
   "files": {
     "bgp-asn-map.json": {
       "sha256": "f934baba2ec5ae25fd09c900b9688fb93a9f42d35bddf13dcc235f59feff3ebd",
@@ -28,7 +28,7 @@
       "source": "https://raw.githubusercontent.com/xykt/NetQuality/main/ref/province.json"
     },
     "speedtest-servers.json": {
-      "sha256": "632ce710c92f07496367d7d0e8b25c7c261bf39f1fdc7949302e20de2f30fa3c",
+      "sha256": "b61227d39fdc3bdcfb5feb739e2752bc0a6a95ad4de85fd5fffbf161f309c71f",
       "count": 15,
       "source": "https://raw.githubusercontent.com/xykt/NetQuality/main/ref/speedtest_cn.json"
     },

@@ -206,7 +206,7 @@
     "provider": "CT",
     "providerzh": "电信",
     "sponsor": "China Telecom JiangSu 5G",
-    "status": "unavailable",
+    "status": "available",
     "url": "http://4gsuzhou1.speedtest.jsinfo.net:8080/speedtest/upload.php"
   },
   {
